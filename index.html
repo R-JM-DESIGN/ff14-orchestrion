@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FF14 오케스트리온 체크리스트</title>
-    <!-- 프리텐다드(Pretendard) 웹 폰트 로드 (타임아웃 에러 완전 영구 해결 완성형 주소) -->
+    <!-- 프리텐다드(Pretendard) 웹 폰트 로드 -->
     <link rel="stylesheet" href="https://jsdelivr.net" />
     <!-- 깃허브 favicon 404 에러 방지용 투명 아이콘 임베딩 생성 -->
     <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
@@ -388,8 +388,8 @@
         tr.completed td.col-cond { color: var(--completed-cond-color); }
         
         /* 테이블 열 정밀 고정 및 비율 분배 (총합 너비 1350px 균형 수립) */
+        .col-new { width: 100px; }       /* 악보 번호 */
         .col-cond { width: 90px; }       /* 패치 */
-        .col-new { width: 100px; }       /* 추가 열 */
         .col-score { width: 230px; }      /* 획득처 */
         .col-rw-type { width: 340px; }    /* 획득 방법 (획득처보다 넓게 배치) */
         .col-rw-content { width: 110px; } /* 거래 여부 */
@@ -492,8 +492,8 @@
                 <th class="col-no">NO</th>
                 <th class="col-check">완료</th>
                 <th id="th-path" class="col-path">분류</th>
-                <th class="col-name">악보명</th>
-                <th class="col-new">추가 열 제목</th>
+                <th class="col-new">악보 번호</th> <!-- 💡 1번 열 위치로 이동 완료 -->
+                <th class="col-name">악보명</th>    <!-- 💡 2번 열 위치로 이동 완료 -->
                 <th class="col-cond">패치</th>
                 <th class="col-score">획득처</th>
                 <th class="col-rw-type">획득 방법</th>
@@ -502,7 +502,7 @@
         </thead>
         <tbody id="achievement-list">
             <tr>
-                <td colspan="9" style="text-align: center; padding: 60px;">
+                <td colspan="9" style="text-align: center; padding: 40px;">
                     <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(250,250,250,0.1); border-radius: 50%; border-top-color: #3a86ff; animation: spin 1s ease-in-out infinite; margin-bottom: 15px;"></div>
                     <div style="color: #aaa; font-size: 0.95em; font-weight: 500;">최신 오케스트리온 데이터를 실시간 동기화 중입니다...</div>
                     <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
