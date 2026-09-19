@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FF14 오케스트리온 체크리스트</title>
-    <!-- 프리텐다드(Pretendard) 웹 폰트 로드 -->
-    <link rel="stylesheet" as="style" crossorigin href="https://jsdelivr.net" />
+    <!-- 프리텐다드(Pretendard) 웹 폰트 로드 (타임아웃 에러 완전 영구 해결 완성형 주소) -->
+    <link rel="stylesheet" href="https://jsdelivr.net" />
+    <!-- 깃허브 favicon 404 에러 방지용 투명 아이콘 임베딩 생성 -->
+    <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
     <style>
         /* [기본 다크 모드 색상 변수 정의] */
         :root {
@@ -378,7 +380,7 @@
             word-break: keep-all;
         } 
 
-        /* 패치, 추가 열, 획득처, 획득 방법, 거래 여부 셀의 텍스트 크기와 배치를 일괄 정렬 */
+        /* 패치, 추가 열, 획득처, 획득 방법, 거래 여부 셀의 텍스트 크기와 배치를 거래 여부 스타일에 싱크 */
         td.col-cond, td.col-new, td.col-score, td.col-rw-type, td.col-rw-content { 
             font-size: 0.85em; 
             text-align: center;
@@ -389,7 +391,7 @@
         .col-cond { width: 90px; }       /* 패치 */
         .col-new { width: 100px; }       /* 추가 열 */
         .col-score { width: 230px; }      /* 획득처 */
-        .col-rw-type { width: 340px; }    /* 획득 방법 */
+        .col-rw-type { width: 340px; }    /* 획득 방법 (획득처보다 넓게 배치) */
         .col-rw-content { width: 110px; } /* 거래 여부 */
 
         th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-score, th.col-rw-type, th.col-rw-content {
@@ -491,7 +493,7 @@
                 <th class="col-check">완료</th>
                 <th id="th-path" class="col-path">분류</th>
                 <th class="col-name">악보명</th>
-                <th class="col-new">추가 열 제목</th> <!-- 💡 [새로 개설된 헤더 컬럼 위치] -->
+                <th class="col-new">추가 열 제목</th>
                 <th class="col-cond">패치</th>
                 <th class="col-score">획득처</th>
                 <th class="col-rw-type">획득 방법</th>
@@ -500,7 +502,7 @@
         </thead>
         <tbody id="achievement-list">
             <tr>
-                <td colspan="9" style="text-align: center; padding: 60px;"> <!-- 💡 열 증가로 colspan을 9로 일괄 확장 -->
+                <td colspan="9" style="text-align: center; padding: 60px;">
                     <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(250,250,250,0.1); border-radius: 50%; border-top-color: #3a86ff; animation: spin 1s ease-in-out infinite; margin-bottom: 15px;"></div>
                     <div style="color: #aaa; font-size: 0.95em; font-weight: 500;">최신 오케스트리온 데이터를 실시간 동기화 중입니다...</div>
                     <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
