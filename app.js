@@ -2,7 +2,7 @@
 // app.js - Part 1 (순수 6열 스키마 전진 매핑 및 오케스트리온 새 스토리지 개설)
 // 🌟 사용자님의 구글 웹 앱 API 주소를 상단에 고정하여 초고속 연동을 지원합니다.
 // =========================================================================
-const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzPaQCh7qTOr8Ep9iF5tvTKA0pK89ILuSZ3Ut-z14NSn7FpA-3fK0tOyt8IFE9-y9eX/exec';
+const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzva7HH9j9XnYLxk4jfkgOxSbVCaHKnqk_tGyiKX4FpbHNfruGkWYp2fBjv8s4O-o3DSw/exec';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
 let rawData = [];
