@@ -1,5 +1,5 @@
 // =========================================================================
-// app.js - Part 1 (순수 6열 스키마 전진 매핑 및 원천 최적화)
+// app.js - Part 1 (순수 6열 스키마 전진 매핑 및 타임아웃 방지 통신 패치)
 // 🌟 사용자님의 구글 웹 앱 API 주소를 상단에 고정하여 초고속 연동을 지원합니다.
 // =========================================================================
 const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw6ArODzFHVcuEygR3onhZ3hL7be7KtFASk9qC5ZZ5ZxWzHF7SYqLw0WsYtEd73Ln9kgA/exec';
@@ -19,7 +19,15 @@ let currentSearchQuery = '';
 // 1. 원격 구글 시트 데이터 비동기 인프라 로드 및 매핑
 async function fetchData() {
     try {
-        const res = await fetch(SHEET_URL);
+        // 🛡️ [타임아웃 파쇄 크리티컬 패치] 구글 앱스 스크립트 특유의 리다이렉션을 추적하도록 redirect 옵션을 강제 주입합니다.
+        const res = await fetch(SHEET_URL, {
+            method: 'GET',
+            redirect: 'follow',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
         if (!res.ok) throw new Error(`웹 앱 API 서버 응답 오류 (상태코드: ${res.status})`);
         
         const rows = await res.json();
@@ -56,6 +64,7 @@ async function fetchData() {
         calculateTotalProgress();
     } catch (error) {
         console.error(error);
+        /* ✂️ 테이블 열 감소 대응: colspan 스케일을 기존 8에서 7로 정밀 변경 마감 */
         document.getElementById('achievement-list').innerHTML = `
             <tr><td colspan="7" style="text-align: center; color: #ff4d4d; font-weight: bold; padding: 40px;">
                 데이터베이스 연동 실패<br>
@@ -81,7 +90,7 @@ function selectStatusFilter(status) {
     renderList();
 }
 
-// 4. 정렬 명령 스위치 핸들러
+// 4. 정렬 명령 스위치 핸들러 및 양방향 크로스 리셋 시스템
 function selectSortOrder(order) {
     currentSortOrder = order;
     document.querySelectorAll('.sort-filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -91,6 +100,7 @@ function selectSortOrder(order) {
     if (order === 'ORIGIN_ASC') document.getElementById('sort-origin-asc').classList.add('active');
     if (order === 'ORIGIN_DESC') document.getElementById('sort-origin-desc').classList.add('active');
     
+    // 획득처 이름순 정렬 클릭 시 획득처 드롭다운을 자동으로 '전체 보기'로 풀어 정렬 범위 유지
     if (order === 'ORIGIN_ASC' || order === 'ORIGIN_DESC') {
         currentOriginFilter = 'ALL';
         resetOriginDropdownUI();
@@ -106,9 +116,11 @@ function selectSortOrder(order) {
         }
         updatePathDisplay();
     }
+    
     renderList();
 }
 
+// 카테고리 선택(A열 분류) 동적 HTML 노드 버튼 빌더
 function initMenu() {
     const mains = [...new Set(rawData.map(item => item.main))].filter(Boolean);
     const mainGroup = document.getElementById('main-category-group');
@@ -282,6 +294,7 @@ function getCurrentFilteredItems() {
 // 리스트 실시간 동적 렌더링 엔진
 function renderList() {
     const listBody = document.getElementById('achievement-list');
+    if (!listBody) return;
     listBody.innerHTML = '';
 
     let filtered = getCurrentFilteredItems();
@@ -336,7 +349,6 @@ function renderList() {
             }
         }
 
-        // parts 배열 인덱스를 명시하여 정상적으로 문자열 trim을 수행합니다.
         let displayCondition = item.condition || '-';
         if (item.condition && item.condition.includes('[')) {
             const parts = item.condition.split('[');
@@ -345,7 +357,7 @@ function renderList() {
             displayCondition = `${beforeBracket}<br><span style="display: block; font-size: 0.85em; color: var(--text-muted); font-weight: normal; margin-top: 2px;">[${afterBracket}</span>`;
         }
 
-        /* ✂️ 데이터 셀 렌더링 수정: 아이콘 데이터가 완전 유실된 스프레드시트 구조에 맞춰 동적 td 셀 주입 마감 */
+        /* ✂️ 데이터 셀 렌더링 수정: 완전히 지워진 아이콘 B열에 맞춰 7개 열 레이아웃 구조로 완벽 고정 마감 */
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
