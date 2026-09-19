@@ -1,5 +1,5 @@
 // =========================================================================
-// app.js - Part 1 (7개 열 확장 스키마 수집 및 이미지 원천 파쇄 보호망)
+// app.js - Part 1 (순수 6열 스키마 전진 매핑 및 원천 최적화)
 // 🌟 사용자님의 구글 웹 앱 API 주소를 상단에 고정하여 초고속 연동을 지원합니다.
 // =========================================================================
 const GOOGLE_WEB_APP_URL = 'https://google.com';
@@ -10,8 +10,8 @@ const STORAGE_KEY = 'game_item_checklist_v3';
 let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 
 let currentMain = '';            // A열: 카테고리 필터링 타겟
-let currentRewardFilter = 'ALL';       // G열: 거래 여부 필터링 타겟
-let currentOriginFilter = 'ALL';       // E열: 획득처 필터링 타겟
+let currentRewardFilter = 'ALL';       // F열: 거래 여부 필터링 타겟
+let currentOriginFilter = 'ALL';       // D열: 획득처 필터링 타겟
 let currentStatusFilter = 'ALL';       // 보유/미보유 상태 필터 타겟
 let currentSortOrder = 'DESC';         // 패치 및 획득처 통합 정렬 변수 (기본값: 최신순 DESC)
 let currentSearchQuery = ''; 
@@ -25,7 +25,7 @@ async function fetchData() {
         const rows = await res.json();
         if (!rows || rows.length <= 1) throw new Error("시트 내부 데이터 레코드가 부족하거나 비어있습니다.");
 
-        // 컴퓨터 인덱스 규칙 고정: A=0, B=1, C=2, D=3, E=4, F=5, G=6
+        // 🌟 [6열 정밀 매핑 재배치] A=0(카테고리), B=1(이름), C=2(패치), D=3(획득처), E=4(획득방법), F=5(거래여부)
         rawData = rows.slice(1).map((row) => {
             if (!row || !Array.isArray(row)) return null;
             
@@ -33,42 +33,29 @@ async function fetchData() {
                 return row[colIdx] !== undefined && row[colIdx] !== null ? String(row[colIdx]).trim() : '';
             };
 
-            // 이미지 주소 깨짐 원천봉쇄 공식 라인 색출기 가동
-            let detectedIconUrl = '';
-            for (let cell of row) {
-                const strCell = String(cell).trim();
-                const match = strCell.match(/https?:\/\/[^\s"']+/i);
-                if (match) {
-                    detectedIconUrl = String(match).trim();
-                    break;
-                }
-            }
-
-            const itemName = getVal(2); // C열: 이름
-            const parsedPatchNum = parseFloat(getVal(3).replace(/[^0-9.]/g, '')) || 0.0;
+            const itemName = getVal(1); // B열: 이름
+            const parsedPatchNum = parseFloat(getVal(2).replace(/[^0-9.]/g, '')) || 0.0; // C열: 패치
 
             return {
                 id: itemName,           
                 main: getVal(0),        // A열: 카테고리 선택
                 sub: '전체 목록',       
-                icon: detectedIconUrl,  // B열: 아이콘 원본 주소
-                name: itemName,         // C열: 이름
-                patch: getVal(3),        // D열: 패치
-                originPlace: getVal(4),  // E열: 획득처
-                condition: getVal(5),   // F열: 조건 상세 설명 문구
+                name: itemName,         // B열: 이름
+                patch: getVal(2),        // C열: 패치
+                originPlace: getVal(3),  // D열: 획득처
+                condition: getVal(4),   // E열: 조건 상세 설명 문구
                 patchValue: parsedPatchNum, 
-                rewardType: getVal(6),  // G열: 거래 여부 데이터
-                rewardContent: getVal(6)
+                rewardType: getVal(5),  // F열: 거래 여부 데이터
+                rewardContent: getVal(5)
             };
         }).filter(item => item && item.name && item.main); 
 
         initMenu();
         initRewardMenu(); 
-        initOriginDropdown(); // 획득처 드롭다운 옵션 빌더 기동
+        initOriginDropdown(); 
         calculateTotalProgress();
     } catch (error) {
         console.error(error);
-        /* ✂️ 테이블 열 감소 대응: colspan 스케일을 기존 8에서 7로 정밀 변경 마감 */
         document.getElementById('achievement-list').innerHTML = `
             <tr><td colspan="7" style="text-align: center; color: #ff4d4d; font-weight: bold; padding: 40px;">
                 데이터베이스 연동 실패<br>
@@ -94,7 +81,7 @@ function selectStatusFilter(status) {
     renderList();
 }
 
-// 4. 정렬 명령 스위치 핸들러 및 양방향 크로스 리셋 시스템
+// 4. 정렬 명령 스위치 핸들러
 function selectSortOrder(order) {
     currentSortOrder = order;
     document.querySelectorAll('.sort-filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -104,7 +91,6 @@ function selectSortOrder(order) {
     if (order === 'ORIGIN_ASC') document.getElementById('sort-origin-asc').classList.add('active');
     if (order === 'ORIGIN_DESC') document.getElementById('sort-origin-desc').classList.add('active');
     
-    // 획득처 이름순 정렬 클릭 시 획득처 드롭다운을 자동으로 '전체 보기'로 풀어 정렬 범위 유지
     if (order === 'ORIGIN_ASC' || order === 'ORIGIN_DESC') {
         currentOriginFilter = 'ALL';
         resetOriginDropdownUI();
@@ -120,11 +106,9 @@ function selectSortOrder(order) {
         }
         updatePathDisplay();
     }
-    
     renderList();
 }
 
-// 카테고리 선택(A열 분류) 동적 HTML 노드 버튼 빌더
 function initMenu() {
     const mains = [...new Set(rawData.map(item => item.main))].filter(Boolean);
     const mainGroup = document.getElementById('main-category-group');
@@ -137,7 +121,6 @@ function initMenu() {
         btn.onclick = () => selectMainCategory(main, btn);
         mainGroup.appendChild(btn);
         
-        // 🌟 [순서 버그 격파 1단계] 첫 번째 대분류 단추를 변수 상에 강제 사전 세팅 고정합니다.
         if (idx === 0) {
             currentMain = main;
             btn.classList.add('active');
@@ -362,7 +345,7 @@ function renderList() {
             displayCondition = `${beforeBracket}<br><span style="display: block; font-size: 0.85em; color: var(--text-muted); font-weight: normal; margin-top: 2px;">[${afterBracket}</span>`;
         }
 
-        /* ✂️ 데이터 셀 렌더링 수정: 아이콘 td 노드라인을 완전히 파쇄 제거하여 7개 컬럼으로 고정 마감 */
+        /* ✂️ 데이터 셀 렌더링 수정: 아이콘 데이터가 완전 유실된 스프레드시트 구조에 맞춰 동적 td 셀 주입 마감 */
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
