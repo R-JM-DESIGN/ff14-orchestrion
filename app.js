@@ -1,12 +1,14 @@
 // =========================================================================
-// app.js - Part 1 (순수 6열 스키마 전진 매핑 및 타임아웃 방지 통신 패치)
+// app.js - Part 1 (순수 6열 스키마 전진 매핑 및 오케스트리온 새 스토리지 개설)
 // 🌟 사용자님의 구글 웹 앱 API 주소를 상단에 고정하여 초고속 연동을 지원합니다.
 // =========================================================================
-const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw6ArODzFHVcuEygR3onhZ3hL7be7KtFASk9qC5ZZ5ZxWzHF7SYqLw0WsYtEd73Ln9kgA/exec';
+const GOOGLE_WEB_APP_URL = 'https://google.com';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
 let rawData = [];
-const STORAGE_KEY = 'game_item_checklist_v3';
+
+// 🔒 [오케스트리온 신규 스토리지 단독 지정 - 기존 데이터 완전 포맷 효과]
+const STORAGE_KEY = 'game_orchestrion_checklist'; // ✨ 이전 내역과 연동되지 않는 깨끗한 백지 상태로 새로 시작합니다.
 let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 
 let currentMain = '';            // A열: 카테고리 필터링 타겟
@@ -19,7 +21,6 @@ let currentSearchQuery = '';
 // 1. 원격 구글 시트 데이터 비동기 인프라 로드 및 매핑
 async function fetchData() {
     try {
-        // 🛡️ [타임아웃 파쇄 크리티컬 패치] 구글 앱스 스크립트 특유의 리다이렉션을 추적하도록 redirect 옵션을 강제 주입합니다.
         const res = await fetch(SHEET_URL, {
             method: 'GET',
             redirect: 'follow',
@@ -100,7 +101,6 @@ function selectSortOrder(order) {
     if (order === 'ORIGIN_ASC') document.getElementById('sort-origin-asc').classList.add('active');
     if (order === 'ORIGIN_DESC') document.getElementById('sort-origin-desc').classList.add('active');
     
-    // 획득처 이름순 정렬 클릭 시 획득처 드롭다운을 자동으로 '전체 보기'로 풀어 정렬 범위 유지
     if (order === 'ORIGIN_ASC' || order === 'ORIGIN_DESC') {
         currentOriginFilter = 'ALL';
         resetOriginDropdownUI();
@@ -343,7 +343,7 @@ function renderList() {
                 displayName = `${mainTitle}<br><span style="display: block; font-size: 0.85em; color: var(--text-muted); font-weight: normal; margin-top: 2px;">${subTitle}</span>`;
             } else {
                 const parts = item.name.split('(');
-                const mainTitle = parts[0] ? parts[0].trim() : ''; 
+                const mainTitle = parts ? parts.trim() : ''; 
                 const subTitle = parts.slice(1).join('(').trim();
                 displayName = `${mainTitle}<br><span style="display: block; font-size: 0.85em; color: var(--text-muted); font-weight: normal; margin-top: 2px;">(${subTitle}</span>`;
             }
@@ -352,12 +352,12 @@ function renderList() {
         let displayCondition = item.condition || '-';
         if (item.condition && item.condition.includes('[')) {
             const parts = item.condition.split('[');
-            const beforeBracket = parts[0] ? parts[0].trim() : '';
+            const beforeBracket = parts ? parts.trim() : '';
             const afterBracket = parts.slice(1).join('[').trim();
             displayCondition = `${beforeBracket}<br><span style="display: block; font-size: 0.85em; color: var(--text-muted); font-weight: normal; margin-top: 2px;">[${afterBracket}</span>`;
         }
 
-        /* ✂️ 데이터 셀 렌더링 수정: 완전히 지워진 아이콘 B열에 맞춰 7개 열 레이아웃 구조로 완벽 고정 마감 */
+        /* ✂️ 데이터 셀 렌더링 수정: 지워진 아이콘 B열 자리를 도려내고 7개 열 레이아웃 구조로 완벽 고정 마감 */
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
