@@ -1,6 +1,5 @@
 // app.js - Part 1
 // 🌟 [원상복구] 깃허브 캐시 대신 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
-// [설정] 구글 배포 서버로부터 JSON 형태의 데이터를 원격 수집하는 게이트웨이 주소 상수입니다.
 const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwSIly1Fk7X-VEvsMNTsnDZTIpcPebdab1BAKLWL9oTe8NP0hTxetq3wCiv-Qta4tHK/exec';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
@@ -12,7 +11,7 @@ let rawData = [];
 let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; // 상수를 안정적으로 바라보도록 연동 매핑
 
 // [상태 변수 관리 변수 스코프] 필터링 및 복합 연산에 연동되는 글로벌 제어 인덱스 목록입니다.
-let currentMain = '';            // [분류] 카테고리 기록용 변수
+let currentMain = '';            // [분류] 카테고리 기록용 변수 (소분류 변수 제거 상태 유지)
 let currentRewardFilters = [];   // [획득 방법] 다중 토글 누적 저장용 배열 변수
 let currentStatusFilter = 'ALL'; // 달성 상태 필터 기록용 변수 (ALL / 미완료 / 완료)
 let currentSearchQuery = '';     // 통합 검색 키워드 실시간 소문자 저장용 변수
@@ -86,15 +85,16 @@ async function fetchData() {
                 return row[colIdx] !== undefined && row[colIdx] !== null ? String(row[colIdx]).trim() : '';
             };
 
-            const musicName = getVal(1); 
+            // 💡 요청하신 구조대로 1번 열과 2번 열의 직렬화 인덱스 바인딩을 정밀하게 맞교환 완료
+            const musicName = getVal(2); // 2번 열: [악보명] 수집
 
             return {
-                id: musicName,          // 고유 식별자
+                id: musicName,          // 고유 식별자 (악보명 기준)
                 main: getVal(0),        // 0번 열: [분류]
-                name: musicName,        // 1번 열: [악보명]
-                newCol: getVal(2),      // 🌟 2번 열: [새로 추가된 데이터 열]
+                name: musicName,        // 2번 열: [악보명]
+                newCol: getVal(1),      // 1번 열: [추가 열 - 악보 번호]
                 condition: getVal(3),   // 3번 열: [패치]
-                score: getVal(4),       // 4번 열: [획득처] 텍스트 보존
+                score: getVal(4),       // 4번 열: [획득처] (문자열 보존)
                 rewardType: getVal(5),  // 5번 열: [획득 방법]
                 rewardContent: getVal(6)// 6번 열: [거래 여부]
             };
@@ -289,7 +289,7 @@ function renderList() {
     } else {
         filtered = rawData.filter(item => {
             const nameMatch = item.name.toLowerCase().includes(currentSearchQuery);
-            const newColMatch = item.newCol.toLowerCase().includes(currentSearchQuery); // 🌟 새로 추가된 열 내부 검색어 매칭 기믹 이식 완결
+            const newColMatch = item.newCol.toLowerCase().includes(currentSearchQuery); // 악보 번호 검색 지원
             const condMatch = item.condition.toLowerCase().includes(currentSearchQuery);
             const typeMatch = item.rewardType.toLowerCase().includes(currentSearchQuery);
             const rewardMatch = item.rewardContent.toLowerCase().includes(currentSearchQuery);
@@ -307,7 +307,7 @@ function renderList() {
     if (showPathColumn) thPath.style.display = ''; 
     else thPath.style.display = 'none'; 
 
-    const activeColspan = showPathColumn ? 9 : 8; // 🌟 추가 열 도입으로 colspan 규격을 한 칸씩 우측으로 밀어서 밸런싱
+    const activeColspan = showPathColumn ? 9 : 8;
 
     if (filtered.length === 0) {
         listBody.innerHTML = `<tr><td colspan="${activeColspan}" style="text-align: center; padding: 40px; color: var(--text-color); opacity: 0.6;">필터 및 검색 조건에 부합하는 악보가 없습니다.</td></tr>`;
@@ -323,7 +323,7 @@ function renderList() {
         const textColor = getRewardColor(item.rewardType);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
-        // 🌟 마크업 구조에 col-new 추가 바인딩 (수정된 index.html 규격과 100% 매칭)
+        // 💡 교정된 배치 순서(악보명 다음 추가 열)에 맞추어 마크업을 연동 조립합니다.
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
@@ -409,11 +409,9 @@ function calculateChapterProgress(currentItems) {
 
 /**
  * ==============================================================================
- * 🚀 [무결성 순차 제어 아키텍처 및 자동 클릭 물리 트리거 엔진 신설]
+ * 🚀 [무결성 순차 제어 아키텍처 및 자동 클릭 물리 트리거 엔진]
  * ==============================================================================
- * 🌟 구글 시트 데이터를 가져온 직후 초기 메인 화면을 가상 클릭하여 여는 장치입니다.
- * 앞서 말씀해 주신 기획안에 맞춰, 시트 A열 첫 데이터 이름표인 '지역1'로 초기값을 동기화했습니다.
- * (만약 나중에 첫 번째 탭 제목이 바뀌면 아래 '지역1' 문자열만 변경해 주세요.)
+ * 🌟 말씀해주신 대분류 타겟 명칭인 '지역1'로 가상 클릭 초기값을 완벽히 셋업했습니다.
  */
 document.addEventListener('DOMContentLoaded', () => {
     fetchData().then(() => {
