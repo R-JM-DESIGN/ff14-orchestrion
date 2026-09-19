@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FF14 오케스트리온 체크리스트</title>
     
-    <!-- 🌟 [jsdelivr 타임아웃 원천 차단] 문제의 도감 도메인을 완전히 제거하고 대체 공식 미러 CDN으로 폰트를 우회 로드합니다 -->
-    <link rel="stylesheet" href="https://cloudflare.com" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- 🌟 [CORS 및 타임아웃 오류 완벽 박멸] 불완전한 도메인 주소를 전면 폐기하고, 구글 공식 폰트 저장소에서 프리텐다드와 호환되는 고품질 Sans font를 안정적으로 직접 원격 로드합니다. -->
+    <link rel="stylesheet" href="https://googleapis.com" />
     
     <!-- 깃허브 favicon 404 에러 방지용 투명 아이콘 임베딩 생성 -->
     <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
@@ -38,9 +38,6 @@
             --top-btn-bg: #3a86ff;
             --top-btn-text: #ffffff;
         }
-        
-        /* ...이하 css 설정 하단 본축 생략 (Part 2와 완벽하게 연결됩니다) ... */
-
 
         /* [라이트 모드 전환 시 교체될 실시간 색상 변수 선언] */
         body.light-mode {
@@ -71,7 +68,7 @@
         }
 
         body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
@@ -283,7 +280,7 @@
             font-weight: 500;
             transition: all 0.2s;
         }
-        button:hover { background: var(--btn-hover-bg); }
+        button:hover { background: var(--btn-hover-bg); border-color: var(--accent-color); }
         button.active {
             background: var(--accent-color);
             color: #fff;
@@ -385,18 +382,16 @@
             word-break: keep-all;
         } 
 
-        /* 패치, 추가 열, 획득처, 획득 방법, 거래 여부 셀의 텍스트 크기와 배치를 거래 여부 스타일에 싱크 */
         td.col-cond, td.col-new, td.col-score, td.col-rw-type, td.col-rw-content { 
             font-size: 0.85em; 
             text-align: center;
         }
         tr.completed td.col-cond { color: var(--completed-cond-color); }
         
-        /* 테이블 열 정밀 고정 및 비율 분배 (총합 너비 1350px 균형 수립) */
         .col-new { width: 100px; }       /* 악보 번호 */
         .col-cond { width: 90px; }       /* 패치 */
         .col-score { width: 230px; }      /* 획득처 */
-        .col-rw-type { width: 340px; }    /* 획득 방법 (획득처보다 넓게 배치) */
+        .col-rw-type { width: 340px; }    /* 획득 방법 */
         .col-rw-content { width: 110px; } /* 거래 여부 */
 
         th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-score, th.col-rw-type, th.col-rw-content {
@@ -450,6 +445,7 @@
         <li>오타, 잘못된 정보 확인, 이외 문의·건의 사항은 <a href="https://tally.so" target="_blank" class="tally-popup-link" style="color: var(--primary, #4ea8de); text-decoration: underline;">질문함</a>으로 보내주세요.</li>
     </ul>
 </div>
+
     <div class="progress-container">
         <div class="progress-box">
             <div>전체 악보 달성도: <span id="total-percent">0%</span> (<span id="total-count">0/0</span>)</div>
@@ -497,8 +493,8 @@
                 <th class="col-no">NO</th>
                 <th class="col-check">완료</th>
                 <th id="th-path" class="col-path">분류</th>
-                <th class="col-new">악보 번호</th> <!-- 💡 1번 열 위치로 이동 완료 -->
-                <th class="col-name">악보명</th>    <!-- 💡 2번 열 위치로 이동 완료 -->
+                <th class="col-new">악보 번호</th>
+                <th class="col-name">악보명</th>
                 <th class="col-cond">패치</th>
                 <th class="col-score">획득처</th>
                 <th class="col-rw-type">획득 방법</th>
@@ -540,6 +536,7 @@
         }
     }
 
+    // 부드러운 스크롤 최상단 이동 처리
     function scrollToTopHead() {
         window.scrollTo({
             top: 0,
@@ -551,3 +548,4 @@
 <script src="app.js"></script>
 </body>
 </html>
+    
