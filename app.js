@@ -1,90 +1,141 @@
-// =========================================================================
-// app.js - Part 1 (순수 6열 스키마 전진 매핑 및 구글 무한 타임아웃 격파 버전)
-// 🌟 사용자님의 구글 웹 앱 API 주소를 상단에 고정하여 초고속 연동을 지원합니다.
-// =========================================================================
-const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzva7HH9j9XnYLxk4jfkgOxSbVCaHKnqk_tGyiKX4FpbHNfruGkWYp2fBjv8s4O-o3DSw/exec';
+// app.js - Part 1
+// 🌟 [원상복구] 깃허브 캐시 대신 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
+// [설정] 구글 배포 서버로부터 JSON 형태의 데이터를 원격 수집하는 게이트웨이 주소 상수입니다.
+const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwSIly1Fk7X-VEvsMNTsnDZTIpcPebdab1BAKLWL9oTe8NP0hTxetq3wCiv-Qta4tHK/exec';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
+// 🎯 [오류 영구 파쇄 완결] 로컬 스토리지 공통 이름표 상수를 최선단에 명확하게 신설 정의합니다.
+const STORAGE_KEY = 'ff14_achievements_v2';
+
+// [순정 구조 복원] 수집된 데이터 원본 배열과 상수를 연동 호출합니다.
 let rawData = [];
+let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; // 상수를 안정적으로 바라보도록 연동 매핑
 
-// 🔒 [오케스트리온 신규 스토리지 단독 지정 - 기존 찌꺼기 포맷 완료]
-const STORAGE_KEY = 'game_orchestrion_checklist'; 
-let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+// [상태 변수 관리 변수 스코프] 필터링 및 복합 연산에 연동되는 글로벌 제어 인덱스 목록입니다.
+let currentMain = '';            // [분류] 카테고리 기록용 변수
+let currentRewardFilters = [];   // [획득 방법] 다중 토글 누적 저장용 배열 변수
+let currentStatusFilter = 'ALL'; // 달성 상태 필터 기록용 변수 (ALL / 미완료 / 완료)
+let currentSearchQuery = '';     // 통합 검색 키워드 실시간 소문자 저장용 변수
 
-let currentMain = '';            // A열: 카테고리 필터링 타겟
-let currentRewardFilter = 'ALL';       // F열: 거래 여부 필터링 타겟
-let currentOriginFilter = 'ALL';       // D열: 획득처 필터링 타겟
-let currentStatusFilter = 'ALL';       // 보유/미보유 상태 필터 타겟
-let currentSortOrder = 'DESC';         // 패치 및 획득처 통합 정렬 변수 (기본값: 최신순 DESC)
-let currentSearchQuery = ''; 
+/**
+ * ------------------------------------------------------------------------------
+ * 1. 테마 모드 영구 기억 및 실시간 전환 엔진 (applySavedThemeMode, toggleThemeMode)
+ * ------------------------------------------------------------------------------
+ */
+function applySavedThemeMode() {
+    const savedTheme = localStorage.getItem("ff14_theme_mode") || "dark";
+    const body = document.body;
+    const icon = document.getElementById("theme-icon");
+    const text = document.getElementById("theme-text");
 
-// 1. 원격 구글 시트 데이터 비동기 인프라 로드 및 매핑
+    if (!icon || !text) return;
+
+    if (savedTheme === "light") {
+        body.classList.add("light-mode"); 
+        icon.textContent = "☀️";          
+        text.textContent = "라이트 모드";   
+    } else {
+        body.classList.remove("light-mode"); 
+        icon.textContent = "🌙";
+        text.textContent = "다크 모드";
+    }
+}
+
+function toggleThemeMode() {
+    const body = document.body;
+    const icon = document.getElementById("theme-icon");
+    const text = document.getElementById("theme-text");
+
+    if (!icon || !text) return;
+
+    if (body.classList.contains("light-mode")) {
+        body.classList.remove("light-mode");
+        icon.textContent = "🌙";
+        text.textContent = "다크 모드";
+        localStorage.setItem("ff14_theme_mode", "dark"); 
+    } else {
+        body.classList.add("light-mode");
+        icon.textContent = "☀️";
+        text.textContent = "라이트 모드";
+        localStorage.setItem("ff14_theme_mode", "light"); 
+    }
+    renderList();
+}
+
+/**
+ * =========================================================================
+ * 📋 비동기 데이터 fetch 원격 수집 및 검색·달성 상태 필터부
+ * =========================================================================
+ */
+
+/**
+ * ------------------------------------------------------------------------------
+ * 1. 구글 스프레드시트 데이터 비동기 원격 로더 및 스키마 직렬화 (fetchData)
+ * ------------------------------------------------------------------------------
+ */
 async function fetchData() {
     try {
-        // 🛡️ [무한 타임아웃 격파 핵심 소스] 
-        // 구글 스크립트 보안 우회 도메인의 리다이렉션을 추적(follow)하고 브라우저 검사를 우회합니다.
-        const res = await fetch(SHEET_URL, {
-            method: 'GET',
-            mode: 'cors',
-            redirect: 'follow', 
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8'
-            }
-        });
-        
-        if (!res.ok) throw new Error(`웹 앱 API 서버 응답 오류 (상태코드: ${res.status})`);
+        const res = await fetch(SHEET_URL);
+        if (!res.ok) throw new Error(`구글 웹 앱 응답 오류 (상태코드: ${res.status})`);
         
         const rows = await res.json();
-        if (!rows || rows.length <= 1) throw new Error("시트 내부 데이터 레코드가 부족하거나 비어있습니다.");
+        if (!rows || rows.length <= 1) throw new Error("시트 내부에 파싱할 데이터 행이 부족합니다.");
 
-        // 🌟 [6열 정밀 매핑 재배치] A=0(카테고리), B=1(이름), C=2(패치), D=3(획득처), E=4(획득방법), F=5(거래여부)
         rawData = rows.slice(1).map((row) => {
-            if (!row || !Array.isArray(row)) return null;
-            
             const getVal = (colIdx) => {
                 return row[colIdx] !== undefined && row[colIdx] !== null ? String(row[colIdx]).trim() : '';
             };
 
-            const itemName = getVal(1); // B열: 이름
-            const parsedPatchNum = parseFloat(getVal(2).replace(/[^0-9.]/g, '')) || 0.0; // C열: 패치
+            const musicName = getVal(1); 
 
             return {
-                id: itemName,           
-                main: getVal(0),        // A열: 카테고리 선택
-                sub: '전체 목록',       
-                name: itemName,         // B열: 이름
-                patch: getVal(2),        // C열: 패치
-                originPlace: getVal(3),  // D열: 획득처
-                condition: getVal(4),   // E열: 조건 상세 설명 문구
-                patchValue: parsedPatchNum, 
-                rewardType: getVal(5),  // F열: 거래 여부 데이터
-                rewardContent: getVal(5)
+                id: musicName,          // 고유 식별자
+                main: getVal(0),        // 0번 열: [분류]
+                name: musicName,        // 1번 열: [악보명]
+                newCol: getVal(2),      // 🌟 2번 열: [새로 추가된 데이터 열]
+                condition: getVal(3),   // 3번 열: [패치]
+                score: getVal(4),       // 4번 열: [획득처] 텍스트 보존
+                rewardType: getVal(5),  // 5번 열: [획득 방법]
+                rewardContent: getVal(6)// 6번 열: [거래 여부]
             };
-        }).filter(item => item && item.name && item.main); 
+        }).filter(item => item.name && item.main); 
 
         initMenu();
         initRewardMenu(); 
-        initOriginDropdown(); 
         calculateTotalProgress();
+        applySavedThemeMode(); 
     } catch (error) {
         console.error(error);
-        /* ✂️ 테이블 열 감소 대응: colspan 스케일을 기존 8에서 7로 정밀 변경 마감 */
         document.getElementById('achievement-list').innerHTML = `
-            <tr><td colspan="7" style="text-align: center; color: #ff4d4d; font-weight: bold; padding: 40px;">
-                데이터베이스 연동 실패<br>
+            <tr><td colspan="9" style="text-align: center; color: #ff4d4d; font-weight: bold; padding: 40px;">
+                구글 스프레드시트 데이터를 로드하지 못했습니다.<br>
                 <span style="color: #aaa; font-size: 0.9em; font-weight: normal;">이유: ${error.message}</span>
             </td></tr>`;
     }
 }
-
-// 2. 검색 인터페이스 인풋 핸들러
+/**
+ * ------------------------------------------------------------------------------
+ * 2. 검색 인풋 인터페이스 감지 및 [Clear] 강제 청소 엔진 (handleSearchInput, clearSearch)
+ * ------------------------------------------------------------------------------
+ */
 function handleSearchInput() {
     const inputElement = document.getElementById('search-keyword');
-    currentSearchQuery = inputElement.value.trim().toLowerCase();
+    if (inputElement) {
+        currentSearchQuery = inputElement.value.trim().toLowerCase();
+        renderList(); 
+    }
+}
+
+function clearSearch() {
+    const inputElement = document.getElementById('search-keyword');
+    if (inputElement) {
+        inputElement.value = ''; 
+    }
+    currentSearchQuery = ''; 
+    updatePathDisplay(); 
     renderList(); 
 }
 
-// 3. 아이템 획득 상태(보유/미보유) 스위칭 컨트롤러
 function selectStatusFilter(status) {
     currentStatusFilter = status;
     document.querySelectorAll('.status-filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -94,70 +145,44 @@ function selectStatusFilter(status) {
     renderList();
 }
 
-// 4. 정렬 명령 스위치 핸들러 및 양방향 크로스 리셋 시스템
-function selectSortOrder(order) {
-    currentSortOrder = order;
-    document.querySelectorAll('.sort-filter-btn').forEach(btn => btn.classList.remove('active'));
-    
-    if (order === 'ASC') document.getElementById('sort-asc').classList.add('active');
-    if (order === 'DESC') document.getElementById('sort-desc').classList.add('active');
-    if (order === 'ORIGIN_ASC') document.getElementById('sort-origin-asc').classList.add('active');
-    if (order === 'ORIGIN_DESC') document.getElementById('sort-origin-desc').classList.add('active');
-    
-    if (order === 'ORIGIN_ASC' || order === 'ORIGIN_DESC') {
-        currentOriginFilter = 'ALL';
-        resetOriginDropdownUI();
-        
-        if (currentRewardFilter === 'ALL' && !currentSearchQuery) {
-            const activeMainBtn = document.querySelector('#main-category-group button.active');
-            if (activeMainBtn) {
-                currentMain = activeMainBtn.textContent;
-            } else {
-                const firstMainBtn = document.querySelector('#main-category-group button');
-                if (firstMainBtn) firstMainBtn.click();
-            }
-        }
-        updatePathDisplay();
-    }
-    
-    renderList();
-}
-
-// 카테고리 선택(A열 분류) 동적 HTML 노드 버튼 빌더
+/**
+ * ------------------------------------------------------------------------------
+ * 3. 중복 없는 데이터 기반 카테고리 [분류] 버튼 생성기 (initMenu)
+ * ------------------------------------------------------------------------------
+ */
 function initMenu() {
-    const mains = [...new Set(rawData.map(item => item.main))].filter(Boolean);
+    const mains = [...new Set(rawData.map(item => item.main))];
     const mainGroup = document.getElementById('main-category-group');
-    mainGroup.innerHTML = '';
+    mainGroup.innerHTML = ''; 
 
     mains.forEach((main, idx) => {
         if(!main) return;
         const btn = document.createElement('button');
         btn.textContent = main;
-        btn.onclick = () => selectMainCategory(main, btn);
+        btn.onclick = () => selectMainCategory(main, btn); 
         mainGroup.appendChild(btn);
-        
-        if (idx === 0) {
-            currentMain = main;
-            btn.classList.add('active');
-        }
     });
 }
 
 function selectMainCategory(main, btn) {
     currentMain = main;
-    currentRewardFilter = 'ALL'; 
-    currentOriginFilter = 'ALL';
-    updateRewardFilterActive();
-    resetOriginDropdownUI(); 
+    currentRewardFilters = []; 
+    updateRewardFilterUI();
 
     document.querySelectorAll('#main-category-group button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    updatePathDisplay();
-    renderList();
+    updatePathDisplay(); 
+    renderList();        
 }
 
+/**
+ * ------------------------------------------------------------------------------
+ * 4. [획득 방법] 필터 메뉴 생성기 (initRewardMenu)
+ * ------------------------------------------------------------------------------
+ */
 function initRewardMenu() {
+    const rewardTypes = [...new Set(rawData.map(item => item.rewardType))].filter(t => t && t !== '-');
     const rewardGroup = document.getElementById('reward-category-group');
     rewardGroup.innerHTML = '';
 
@@ -165,143 +190,112 @@ function initRewardMenu() {
     allBtn.textContent = '필터 해제'; 
     allBtn.classList.add('reward-filter-btn', 'active');
     allBtn.id = 'rw-btn-all';
-    allBtn.onclick = () => selectRewardFilter('ALL', allBtn);
+    allBtn.onclick = () => selectRewardMultiFilter('ALL');
     rewardGroup.appendChild(allBtn);
 
-    const fixedTypes = ['거래 가능', '거래 불가'];
-    fixedTypes.forEach(type => {
+    rewardTypes.forEach(type => {
         const btn = document.createElement('button');
         btn.textContent = type; 
         btn.classList.add('reward-filter-btn');
-        btn.onclick = () => selectRewardFilter(type, btn); 
+        btn.setAttribute('data-reward-type', type); 
+        btn.onclick = () => selectRewardMultiFilter(type); 
         rewardGroup.appendChild(btn);
     });
 }
 
-// 획득처 드롭다운 옵션 빌더 기동
-function initOriginDropdown() {
-    const originTypes = [...new Set(rawData.map(item => item.originPlace))].filter(t => t && t !== '-');
-    const dropdown = document.getElementById('condition-dropdown-filter');
-    
-    dropdown.innerHTML = '<option value="ALL">전체 보기 (필터 해제)</option>';
-    
-    originTypes.forEach(type => {
-        const option = document.createElement('option');
-        option.value = type;
-        option.textContent = type;
-        dropdown.appendChild(option);
-    });
-}
-
-function selectRewardFilter(type, btn) {
-    if (type !== 'ALL' && currentRewardFilter === type) {
-        const allBtn = document.getElementById('rw-btn-all');
-        if (allBtn) { selectRewardFilter('ALL', allBtn); return; }
-    }
-
-    currentRewardFilter = type; 
-    document.querySelectorAll('.reward-filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    
-    updatePathDisplay();
-    renderList();
-}
-// 기본 카테고리 복원
-function restoreDefaultCategory() {
-    if (currentRewardFilter === 'ALL' && currentOriginFilter === 'ALL') {
-        const activeMainBtn = document.querySelector('#main-category-group button.active');
-        if (activeMainBtn) {
-            currentMain = activeMainBtn.textContent;
+function selectRewardMultiFilter(type) {
+    if (type === 'ALL') {
+        currentRewardFilters = []; 
+    } else {
+        const index = currentRewardFilters.indexOf(type);
+        if (index > -1) {
+            currentRewardFilters.splice(index, 1); 
         } else {
-            const firstMainBtn = document.querySelector('#main-category-group button');
-            if (firstMainBtn) firstMainBtn.click();
+            currentRewardFilters.push(type); 
+            document.querySelectorAll('#main-category-group button').forEach(b => b.classList.remove('active'));
         }
-        updatePathDisplay();
     }
+    
+    updateRewardFilterUI(); 
+    updatePathDisplay();    
+    renderList();           
 }
 
-// 경로 디스플레이 업데이트
+function updateRewardFilterUI() {
+    const allBtn = document.getElementById('rw-btn-all');
+    
+    if (currentRewardFilters.length === 0) {
+        document.querySelectorAll('.reward-filter-btn').forEach(b => b.classList.remove('active'));
+        if (allBtn) allBtn.classList.add('active'); 
+    } else {
+        if (allBtn) allBtn.classList.remove('active'); 
+        document.querySelectorAll('.reward-filter-btn').forEach(btn => {
+            const type = btn.getAttribute('data-reward-type');
+            if (currentRewardFilters.includes(type)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+}
+/**
+ * =========================================================================
+ * 📋 가변 레이아웃 교집합 연산 및 실시간 진척도 게이지 계산부
+ * =========================================================================
+ */
+
 function updatePathDisplay() {
     const display = document.getElementById('current-path-display');
     if (!display) return;
-
-    let basePathText = `📂 분류 : ${currentMain || '전체 목록'}`;
-    let texts = [];
-    
-    if (currentRewardFilter !== 'ALL') texts.push(`⚖️ 거래 여부 : ${currentRewardFilter}`);
-    if (currentOriginFilter !== 'ALL') texts.push(`🗺️ 획득처 : ${currentOriginFilter}`);
-    
-    if (texts.length > 0) {
-        display.textContent = `${basePathText} ➡️ ⛓️ [복합 필터 가동중] ${texts.join(' ➕ ')}`;
+    if (currentSearchQuery) {
+        display.textContent = `🔍 전체 항목 중에서 '${currentSearchQuery}' 검색 결과`;
+    } else if (currentRewardFilters.length > 0) {
+        display.textContent = `🎁 [다중 필터] 획득 방법 : ${currentRewardFilters.join(', ')}`;
     } else {
-        display.textContent = basePathText;
+        display.textContent = `${currentMain}`;
     }
 }
 
-function updateRewardFilterActive() {
-    document.querySelectorAll('.reward-filter-btn').forEach(b => b.classList.remove('active'));
-    const allBtn = document.getElementById('rw-btn-all');
-    if(allBtn) allBtn.classList.add('active');
-}
-
-function resetOriginDropdownUI() {
-    const dropdown = document.getElementById('condition-dropdown-filter');
-    if (dropdown) dropdown.value = 'ALL';
-}
-
-// =========================================================================
-// app.js - Part 3 (교집합 연산 정렬 스코프 및 7열 무결성 렌더링)
-// =========================================================================
-
-function isTradeable(rawType) {
-    if (!rawType) return false;
-    const txt = String(rawType).trim().toUpperCase();
-    return txt === 'O' || txt === 'Y' || txt.includes('가능');
-}
-
-function isNotTradeable(rawType) {
-    if (!rawType) return false;
-    const txt = String(rawType).trim().toUpperCase();
-    return txt === 'X' || txt === 'N' || txt.includes('불가');
-}
-
 function getRewardColor(type) {
-    if (isTradeable(type)) return '#70e000'; 
-    if (isNotTradeable(type)) return '#ff4d4d'; 
-    return '#888888'; 
+    if (!type || type === '-') return '#666666'; 
+    const isLight = document.body.classList.contains("light-mode");
+    switch (type) {
+        case '탈것': return isLight ? '#b80061' : '#ff70a6';      
+        case '꼬마친구': return isLight ? '#0066cc' : '#4ea8de';    
+        case '칭호': return isLight ? '#b55d00' : '#ff9f1c';      
+        case '장비': return isLight ? '#7209b7' : '#b5179e';      
+        case '가구': return isLight ? '#2d6a4f' : '#70e000';      
+        case '초코보 갑주': return isLight ? '#995a00' : '#ffd166';  
+        case '오케스트리온': return isLight ? '#0077b6' : '#48cae4'; 
+        default: return isLight ? '#14746f' : '#5bc0be';         
+    }
 }
 
-// 다중 복합 필터 조건식에 부합하는 현재 타겟 아이템 배열 정제 마스터 함수
-function getCurrentFilteredItems() {
-    return rawData.filter(item => {
-        if (currentSearchQuery) {
-            return item.name.toLowerCase().includes(currentSearchQuery) || 
-                   item.patch.toLowerCase().includes(currentSearchQuery) || 
-                   item.originPlace.toLowerCase().includes(currentSearchQuery) || 
-                   item.condition.toLowerCase().includes(currentSearchQuery) || 
-                   item.rewardType.toLowerCase().includes(currentSearchQuery);
-        }
-        
-        if (currentMain && item.main !== currentMain) return false;
-        
-        if (currentRewardFilter !== 'ALL') {
-            if (currentRewardFilter === '거래 가능' && !isTradeable(item.rewardType)) return false;
-            if (currentRewardFilter === '거래 불가' && !isNotTradeable(item.rewardType)) return false;
-        }
-        
-        if (currentOriginFilter !== 'ALL' && item.originPlace !== currentOriginFilter) return false;
-        
-        return true;
-    });
-}
-
-// 리스트 실시간 동적 렌더링 엔진
 function renderList() {
     const listBody = document.getElementById('achievement-list');
-    if (!listBody) return;
-    listBody.innerHTML = '';
+    const thPath = document.getElementById('th-path');
+    if (!listBody || !thPath) return;
+    listBody.innerHTML = ''; 
 
-    let filtered = getCurrentFilteredItems();
+    let filtered = [];
+    
+    if (!currentSearchQuery) {
+        if (currentRewardFilters.length === 0) {
+            filtered = rawData.filter(item => item.main === currentMain);
+        } else {
+            filtered = rawData.filter(item => currentRewardFilters.includes(item.rewardType));
+        }
+    } else {
+        filtered = rawData.filter(item => {
+            const nameMatch = item.name.toLowerCase().includes(currentSearchQuery);
+            const newColMatch = item.newCol.toLowerCase().includes(currentSearchQuery); // 🌟 새로 추가된 열 내부 검색어 매칭 기믹 이식 완결
+            const condMatch = item.condition.toLowerCase().includes(currentSearchQuery);
+            const typeMatch = item.rewardType.toLowerCase().includes(currentSearchQuery);
+            const rewardMatch = item.rewardContent.toLowerCase().includes(currentSearchQuery);
+            return nameMatch || newColMatch || condMatch || typeMatch || rewardMatch;
+        });
+    }
 
     if (currentStatusFilter === 'UNCOMPLETED') {
         filtered = filtered.filter(item => !checkedItems[item.id]); 
@@ -309,17 +303,14 @@ function renderList() {
         filtered = filtered.filter(item => checkedItems[item.id]);  
     }
 
-    filtered.sort((a, b) => {
-        if (currentSortOrder === 'ASC') return a.patchValue - b.patchValue;
-        if (currentSortOrder === 'DESC') return b.patchValue - a.patchValue;
-        if (currentSortOrder === 'ORIGIN_ASC') return (a.originPlace || '').localeCompare(b.originPlace || '', 'ko');
-        if (currentSortOrder === 'ORIGIN_DESC') return (b.originPlace || '').localeCompare(a.originPlace || '', 'ko');
-        return 0;
-    });
+    const showPathColumn = (currentRewardFilters.length > 0 || currentSearchQuery !== '');
+    if (showPathColumn) thPath.style.display = ''; 
+    else thPath.style.display = 'none'; 
+
+    const activeColspan = showPathColumn ? 9 : 8; // 🌟 추가 열 도입으로 colspan 규격을 한 칸씩 우측으로 밀어서 밸런싱
 
     if (filtered.length === 0) {
-        /* ✂️ 열 축소 반영: colspan 스케일을 기존 8에서 7로 정밀 변경 마감 */
-        listBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: #888;">조건에 맞는 아이템이 존재하지 않습니다.</td></tr>`;
+        listBody.innerHTML = `<tr><td colspan="${activeColspan}" style="text-align: center; padding: 40px; color: var(--text-color); opacity: 0.6;">필터 및 검색 조건에 부합하는 악보가 없습니다.</td></tr>`;
         calculateChapterProgress([]);
         return;
     }
@@ -327,59 +318,33 @@ function renderList() {
     filtered.forEach((item, idx) => {
         const tr = document.createElement('tr');
         const isChecked = checkedItems[item.id] ? 'checked' : '';
-        if(isChecked) tr.classList.add('completed');
+        if(isChecked) tr.classList.add('completed'); 
 
         const textColor = getRewardColor(item.rewardType);
+        let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
-        // 표에 인쇄될 글자를 O 또는 X로 매핑
-        let tableTradeText = item.rewardType || '-';
-        if (isTradeable(item.rewardType)) tableTradeText = 'O';
-        else if (isNotTradeable(item.rewardType)) tableTradeText = 'X';
-
-        let displayName = item.name;
-        if (item.name && item.name.includes('(')) {
-            const bracketCount = (item.name.match(/\(/g) || []).length;
-            if (bracketCount >= 2) {
-                const firstIdx = item.name.indexOf('(');
-                const secondIdx = item.name.indexOf('(', firstIdx + 1);
-                const mainTitle = item.name.substring(0, secondIdx).trim();
-                const subTitle = item.name.substring(secondIdx).trim();
-                displayName = `${mainTitle}<br><span style="display: block; font-size: 0.85em; color: var(--text-muted); font-weight: normal; margin-top: 2px;">${subTitle}</span>`;
-            } else {
-                const parts = item.name.split('(');
-                const mainTitle = parts[0] ? parts[0].trim() : ''; 
-                const subTitle = parts.slice(1).join('(').trim();
-                displayName = `${mainTitle}<br><span style="display: block; font-size: 0.85em; color: var(--text-muted); font-weight: normal; margin-top: 2px;">(${subTitle}</span>`;
-            }
-        }
-
-        let displayCondition = item.condition || '-';
-        if (item.condition && item.condition.includes('[')) {
-            const parts = item.condition.split('[');
-            const beforeBracket = parts[0] ? parts[0].trim() : '';
-            const afterBracket = parts.slice(1).join('[').trim();
-            displayCondition = `${beforeBracket}<br><span style="display: block; font-size: 0.85em; color: var(--text-muted); font-weight: normal; margin-top: 2px;">[${afterBracket}</span>`;
-        }
-
-        /* ✂️ 데이터 셀 렌더링 수정: 지워진 아이콘 B열 자리를 빼고 7개 열 레이아웃 구조로 완벽 고정 마감 */
+        // 🌟 마크업 구조에 col-new 추가 바인딩 (수정된 index.html 규격과 100% 매칭)
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
-            <td class="col-name">${displayName}</td>
-            <td class="col-cond">${item.patch}</td>
-            <td class="col-type" style="color: #ff9f1c; font-weight: bold;">${item.originPlace || '-'}</td>
-            <td class="col-score" style="text-align: left; padding-left: 12px;">${displayCondition}</td>
-            <td class="col-rw-type" style="color: ${textColor}; font-weight: bold;">${tableTradeText}</td>
+            ${pathTd}
+            <td class="col-name">${item.name}</td>
+            <td class="col-new">${item.newCol}</td>
+            <td class="col-cond">${item.condition}</td>
+            <td class="col-score">${item.score}</td>
+            <td class="col-rw-type" style="color: ${textColor}; font-weight:bold;">${item.rewardType || '-'}</td>
+            <td class="col-rw-content">${item.rewardContent || '-'}</td>
         `;
         listBody.appendChild(tr);
     });
-    
-    calculateChapterProgress(getCurrentFilteredItems());
-}
 
-// =========================================================================
-// app.js - Part 4 (체크 상태 제어 및 진척도 실시간 연산 인터페이스)
-// =========================================================================
+    if (currentSearchQuery || currentRewardFilters.length > 0) {
+        calculateChapterProgress(filtered);
+    } else {
+        const currentViewItems = rawData.filter(item => item.main === currentMain);
+        calculateChapterProgress(currentViewItems);
+    }
+}
 
 function toggleItem(id, checkbox) {
     const row = checkbox.closest('tr');
@@ -391,54 +356,77 @@ function toggleItem(id, checkbox) {
         row.classList.remove('completed');
     }
     
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedItems));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedItems)); 
     calculateTotalProgress();
-    calculateChapterProgress(getCurrentFilteredItems());
+
+    if (currentStatusFilter !== 'ALL' || currentSearchQuery || currentRewardFilters.length > 0) {
+        renderList();
+    } else {
+        const currentViewItems = rawData.filter(item => item.main === currentMain);
+        calculateChapterProgress(currentViewItems);
+    }
 }
 
 function calculateTotalProgress() {
     const total = rawData.length;
-    if (total === 0) return;
-    const checked = Object.keys(checkedItems).filter(id => rawData.some(item => item.id === id)).length;
-    const percent = Math.round((checked / total) * 100) || 0;
+    if(total === 0) return;
+    
+    const checkedCount = rawData.filter(item => checkedItems[item.id]).length;
+    const percent = Math.round((checkedCount / total) * 100);
 
-    document.getElementById('total-count').textContent = `(${checked}/${total})`;
     document.getElementById('total-percent').textContent = `${percent}%`;
+    document.getElementById('total-count').textContent = `${checkedCount}/${total}`;
     document.getElementById('total-bar').style.width = `${percent}%`;
+
+    document.getElementById('score-total').textContent = `${checkedCount.toLocaleString()} 개`;
 }
 
-function calculateChapterProgress(currentFiltered) {
-    const total = currentFiltered.length;
-    const checked = currentFiltered.filter(item => checkedItems[item.id]).length;
-    const percent = total === 0 ? 0 : Math.round((checked / total) * 100);
+function calculateChapterProgress(currentItems) {
+    const total = currentItems.length;
+    
+    if (currentSearchQuery) document.getElementById('chapter-percent').parentElement.firstChild.textContent = "현재 검색 항목 달성도: ";
+    else if (currentRewardFilters.length > 0) document.getElementById('chapter-percent').parentElement.firstChild.textContent = "선택 보상 달성도: ";
+    else document.getElementById('chapter-percent').parentElement.firstChild.textContent = "현재 필터 달성도: ";
 
-    const labelElement = document.getElementById('chapter-title-label');
-    if (labelElement) {
-        labelElement.textContent = currentSearchQuery ? '🔍 검색 결과 달성도' : '📂 현재 분류 달성도';
+    let exactTotal = total;
+    if (exactTotal === 0 && currentMain && !currentSearchQuery && currentRewardFilters.length === 0) {
+        exactTotal = rawData.filter(item => item.main === currentMain).length;
     }
 
-    document.getElementById('chapter-count').textContent = `(${checked}/${total})`;
+    if(exactTotal === 0) {
+        document.getElementById('chapter-percent').textContent = `0%`;
+        document.getElementById('chapter-count').textContent = `0/0`;
+        document.getElementById('chapter-bar').style.width = `0%`;
+        return;
+    }
+    const checkedCount = currentItems.filter(item => checkedItems[item.id]).length;
+    const percent = Math.round((checkedCount / exactTotal) * 100);
+
     document.getElementById('chapter-percent').textContent = `${percent}%`;
+    document.getElementById('chapter-count').textContent = `${checkedCount}/${exactTotal}`;
     document.getElementById('chapter-bar').style.width = `${percent}%`;
 }
 
-// 🗺️ 핸들러 선언 연동 
-function handleOriginDropdownChange(selectElement) {
-    currentOriginFilter = selectElement.value;
-    renderList();
-}
+/**
+ * ==============================================================================
+ * 🚀 [무결성 순차 제어 아키텍처 및 자동 클릭 물리 트리거 엔진 신설]
+ * ==============================================================================
+ * 🌟 구글 시트 데이터를 가져온 직후 초기 메인 화면을 가상 클릭하여 여는 장치입니다.
+ * 앞서 말씀해 주신 기획안에 맞춰, 시트 A열 첫 데이터 이름표인 '지역1'로 초기값을 동기화했습니다.
+ * (만약 나중에 첫 번째 탭 제목이 바뀌면 아래 '지역1' 문자열만 변경해 주세요.)
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    fetchData().then(() => {
+        updatePathDisplay(); 
 
-function clearOriginDropdownFilter() {
-    currentOriginFilter = 'ALL';
-    resetOriginDropdownUI();
-    renderList();
-}
+        const mainButtons = document.querySelectorAll('#main-category-group button');
+        const targetMainBtn = Array.from(mainButtons).find(btn => btn.textContent.trim() === '지역1');
 
-function clearSearchInputFilter() {
-    document.getElementById('search-keyword').value = '';
-    currentSearchQuery = '';
-    renderList();
-}
-
-// 최초 마스터 데이터베이스 즉시 트리거 실행
-fetchData();
+        if (targetMainBtn) {
+            targetMainBtn.click(); 
+        } else {
+            const firstMainBtn = document.querySelector('#main-category-group button');
+            if (firstMainBtn) firstMainBtn.click();
+        }
+    });
+});
