@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FF14 오케스트리온 체크리스트</title>
-    <!-- 프리텐다드(Pretendard) 웹 폰트 로드 -->
-    <link rel="stylesheet" href="https://jsdelivr.net" />
+    
+    <!-- 🌟 [jsdelivr 타임아웃 원천 차단] 문제의 도감 도메인을 완전히 제거하고 대체 공식 미러 CDN으로 폰트를 우회 로드합니다 -->
+    <link rel="stylesheet" href="https://cloudflare.com" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
     <!-- 깃허브 favicon 404 에러 방지용 투명 아이콘 임베딩 생성 -->
     <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
     <style>
@@ -36,6 +38,9 @@
             --top-btn-bg: #3a86ff;
             --top-btn-text: #ffffff;
         }
+        
+        /* ...이하 css 설정 하단 본축 생략 (Part 2와 완벽하게 연결됩니다) ... */
+
 
         /* [라이트 모드 전환 시 교체될 실시간 색상 변수 선언] */
         body.light-mode {
