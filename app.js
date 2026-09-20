@@ -1,6 +1,6 @@
 // app.js - Part 1
 // 🌟 [원상복구] 깃허브 캐시 대신 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
-const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw8fEB1aKJ9ex5SAvhgtqSXqAHrVwwp8g3u0wDr6sZUkbjJnVQ3XOUV-nX2EI7B9mh5/exec';
+const GOOGLE_WEB_APP_URL = 'https://google.com';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
 // 🎯 [오류 영구 파쇄 완결] 로컬 스토리지 공통 이름표 상수를 최선단에 명확하게 신설 정의합니다.
@@ -12,7 +12,7 @@ let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; // 상�
 
 // [상태 변수 관리 변수 스코프] 필터링 및 복합 연산에 연동되는 글로벌 제어 인덱스 목록입니다.
 let currentMain = '';            // [분류] 카테고리 기록용 변수 (소분류 변수 제거 상태 유지)
-let currentRewardFilters = [];   // [획득 방법] 다중 토글 누적 저장용 배열 변수
+let currentRewardFilters = [];   // [획득처] 다중 토글 누적 저장용 배열 변수 (획득처 기준으로 변환)
 let currentStatusFilter = 'ALL'; // 달성 상태 필터 기록용 변수 (ALL / 미완료 / 완료)
 let currentSearchQuery = '';     // 통합 검색 키워드 실시간 소문자 저장용 변수
 
@@ -85,7 +85,6 @@ async function fetchData() {
                 return row[colIdx] !== undefined && row[colIdx] !== null ? String(row[colIdx]).trim() : '';
             };
 
-            // 💡 [최종 위치 정밀 교정 완결] 1번 열이 악보 번호(newCol), 2번 열이 악보명(musicName)인 스키마 반영
             const musicName = getVal(2); // 2번 열: [악보명] 추출
 
             return {
@@ -178,11 +177,12 @@ function selectMainCategory(main, btn) {
 
 /**
  * ------------------------------------------------------------------------------
- * 4. [획득 방법] 필터 메뉴 생성기 (initRewardMenu)
+ * 4. [획득처별 모아보기] 필터 메뉴 생성기 (initRewardMenu)
  * ------------------------------------------------------------------------------
  */
 function initRewardMenu() {
-    const rewardTypes = [...new Set(rawData.map(item => item.rewardType))].filter(t => t && t !== '-');
+    // 💡 [획득처 개편] 기존 rewardType 대신 score(획득처) 데이터를 추출하여 고유 단추 필터를 오토 빌드합니다.
+    const scoreTypes = [...new Set(rawData.map(item => item.score))].filter(t => t && t !== '-');
     const rewardGroup = document.getElementById('reward-category-group');
     rewardGroup.innerHTML = '';
 
@@ -193,7 +193,7 @@ function initRewardMenu() {
     allBtn.onclick = () => selectRewardMultiFilter('ALL');
     rewardGroup.appendChild(allBtn);
 
-    rewardTypes.forEach(type => {
+    scoreTypes.forEach(type => {
         const btn = document.createElement('button');
         btn.textContent = type; 
         btn.classList.add('reward-filter-btn');
@@ -251,7 +251,7 @@ function updatePathDisplay() {
     if (currentSearchQuery) {
         display.textContent = `🔍 전체 항목 중에서 '${currentSearchQuery}' 검색 결과`;
     } else if (currentRewardFilters.length > 0) {
-        display.textContent = `🎁 [다중 필터] 획득 방법 : ${currentRewardFilters.join(', ')}`;
+        display.textContent = `🎁 [다중 필터] 획득처 : ${currentRewardFilters.join(', ')}`;
     } else {
         display.textContent = `${currentMain}`;
     }
@@ -284,12 +284,13 @@ function renderList() {
         if (currentRewardFilters.length === 0) {
             filtered = rawData.filter(item => item.main === currentMain);
         } else {
-            filtered = rawData.filter(item => currentRewardFilters.includes(item.rewardType));
+            // 💡 [획득처 필터 적용] 모아보기 필터 선택 시 rewardType 대신 score(획득처) 컬럼 데이터와 교집합 대조를 수행합니다.
+            filtered = rawData.filter(item => currentRewardFilters.includes(item.score));
         }
     } else {
         filtered = rawData.filter(item => {
             const nameMatch = item.name.toLowerCase().includes(currentSearchQuery);
-            const newColMatch = item.newCol.toLowerCase().includes(currentSearchQuery); // 악보 번호 검색 매칭 지원
+            const newColMatch = item.newCol.toLowerCase().includes(currentSearchQuery);
             const condMatch = item.condition.toLowerCase().includes(currentSearchQuery);
             const typeMatch = item.rewardType.toLowerCase().includes(currentSearchQuery);
             const rewardMatch = item.rewardContent.toLowerCase().includes(currentSearchQuery);
@@ -320,10 +321,10 @@ function renderList() {
         const isChecked = checkedItems[item.id] ? 'checked' : '';
         if(isChecked) tr.classList.add('completed'); 
 
+        // 💡 [강조 색상 스와프 연산] 획득 방법에서 색상을 배제하고, 대신 획득처(score) 텍스트에 동적 강조 컬러를 기입합니다.
         const textColor = getRewardColor(item.rewardType);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
-        // 💡 [최종 배치 정밀 조립] index.html의 <th> 구성인 악보 번호(item.newCol)가 먼저 오고 악보명(item.name)이 오도록 열 배치 싱크를 완성했습니다.
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
@@ -331,8 +332,8 @@ function renderList() {
             <td class="col-new">${item.newCol}</td>
             <td class="col-name">${item.name}</td>
             <td class="col-cond">${item.condition}</td>
-            <td class="col-score">${item.score}</td>
-            <td class="col-rw-type" style="color: ${textColor}; font-weight:bold;">${item.rewardType || '-'}</td>
+            <td class="col-score" style="color: ${textColor}; font-weight:bold;">${item.score || '-'}</td>
+            <td class="col-rw-type">${item.rewardType || '-'}</td>
             <td class="col-rw-content">${item.rewardContent || '-'}</td>
         `;
         listBody.appendChild(tr);
