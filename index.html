@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FF14 오케스트리온 체크리스트</title>
-    <!-- 프리텐다드(Pretendard) 웹 폰트 로드 (타임아웃 원천 방어 완성형 주소) -->
+    <!-- 프리텐다드(Pretendard) 웹 폰트 로드 -->
     <link rel="stylesheet" href="https://googleapis.com" />
     <!-- 깃허브 favicon 404 에러 방지용 투명 아이콘 임베딩 생성 -->
     <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
@@ -35,7 +35,7 @@
             --completed-path-color: #52637a;
             --top-btn-bg: #3a86ff;
             --top-btn-text: #ffffff;
-            /* 사진 속 정렬 선택 색상 (보라색 테마 변수 신설) */
+            /* 정렬 선택 시 이식되는 이쁜 보라색 변수 */
             --purple-sort-color: #9d4edd;
         }
 
@@ -222,7 +222,8 @@
         }
         .filter-flex-item {
             flex: 1;
-            min-width: 320px;
+            /* 💡 정렬 블록이 3줄로 늘어남에 따라 브레이크포인트 최소 너비를 유연하게 재조정 */
+            min-width: 280px; 
         }
         
         .search-box-container {
@@ -311,7 +312,7 @@
             font-weight: 600;
         }
         
-        /* [사진 전용 정렬 버튼 테마 스타일 선언] 선택 시 이식되는 이쁜 보라색 처리 기믹 */
+        /* [정렬 버튼 테마 스타일 선언] 선택 시 이식되는 보라색 하이라이트 유지 */
         button.sort-filter-btn.active {
             background: var(--purple-sort-color);
             border-color: var(--purple-sort-color);
@@ -403,26 +404,26 @@
             word-break: keep-all;
         } 
 
-        /* 패치, 악보 번호, 거래 여부 셀은 깔끔한 기본 크기를 유지합니다. */
+        /* 패치, 악보 번호, 거래 여부 셀 기본 스타일 */
         td.col-cond, td.col-new, td.col-rw-content { 
             font-size: 0.85em; 
             text-align: center;
         }
         tr.completed td.col-cond { color: var(--completed-cond-color); }
 
-        /* 🌟 [획득처 항목 헤비 볼드체 변환 패치] */
+        /* [획득처 항목 헤비 볼드체 변환 유지] */
         td.col-score {
-            font-size: 1.02em !important;   /* 크고 뚜렷하게 확장된 크기 유지 */
-            font-weight: 700 !important;   /* 500에서 700(헤비 볼드)으로 대폭 상향하여 강렬하게 강조 */
+            font-size: 1.02em !important;   
+            font-weight: 700 !important;   
             letter-spacing: -0.01em;
             line-height: 1.55;
             text-align: center;
         }
 
-        /* 🌟 [획득 방법 항목 크기 정밀 미세 축소 패치] */
+        /* [획득 방법 항목 크기 정밀 미세 축소 유지] */
         td.col-rw-type {
-            font-size: 0.93em !important;   /* 기존 1.02em에서 아주 조금만 컴팩트하게 줄여 밸런싱 수립 */
-            font-weight: 500 !important;   /* 뚜렷하게 보여주는 볼드 속성은 그대로 보존 */
+            font-size: 0.93em !important;   
+            font-weight: 500 !important;   
             letter-spacing: -0.01em;
             line-height: 1.55;
             text-align: left; 
@@ -445,7 +446,6 @@
             height: 18px;
             cursor: pointer;
         }
-
         /* [수정 완료] 글자를 컴팩트하게 줄이고, 눈에 안 띄는 연한 회색+투명도 필터링 마감 */
         footer {
             max-width: 1500px;
@@ -481,7 +481,7 @@
 <div class="description-box">
     <div class="info-title">💡 이용 안내</div>
     <ul class="info-list">
-        <li><strong>최종 업데이트:</strong> 26. 09. 19 (ver. 7.56)</li>
+        <li><strong>최종 업데이트:</strong> 26. 09. 20 (ver. 7.56)</li>
         <li>개인 브라우저에 저장되는 도감 시스템입니다. 로그인이 필요하지 않으나, 캐시를 삭제하거나 IP 등이 변경될 경우 저장된 정보가 사라질 수 있습니다.</li>
         <li>콘텐츠에 따라 스포일러가 있을 수 있으니 열람에 주의하십시오.</li>
         <li><a href="https://ff14.co.kr" target="_blank" style="color: var(--primary, #4ea8de); text-decoration: underline;">한국 파판14 가이드</a>를 참고하여 제작된 체크리스트입니다.</li>
@@ -513,7 +513,7 @@
         </div>
     </div>
 
-    <!-- [정렬 그룹 수평 배치 컨테이너] 완료 여부 필터 옆에 나란히 배치하도록 플렉스 행 결합 -->
+    <!-- [정렬 그룹 수평 배치 컨테이너] 3가지 정렬 컴포넌트가 수평 플렉스로 구성됩니다 -->
     <div class="filter-flex-row">
         <!-- 1번 아이템: 완료 여부 필터 -->
         <div class="filter-flex-item">
@@ -525,16 +525,25 @@
             </div>
         </div>
 
-        <!-- 2번 아이템: 패치 버전 정렬 -->
+        <!-- 2번 아이템: 악보 번호 정렬 (신설: 기본 액티브 활성화) -->
+        <div class="filter-flex-item">
+            <div class="filter-title">🎵 악보 번호 정렬</div>
+            <div class="btn-group">
+                <button id="sort-num-asc" class="sort-filter-btn active" onclick="changeSortingFilter('NUM_ASC')">번호순 ▲</button>
+                <button id="sort-num-desc" class="sort-filter-btn" onclick="changeSortingFilter('NUM_DESC')">역순 ▼</button>
+            </div>
+        </div>
+
+        <!-- 3번 아이템: 패치 버전 정렬 -->
         <div class="filter-flex-item">
             <div class="filter-title">🔢 패치 버전 정렬</div>
             <div class="btn-group">
-                <button id="sort-patch-asc" class="sort-filter-btn active" onclick="changeSortingFilter('PATCH_ASC')">패치 낮은순 ▲</button>
+                <button id="sort-patch-asc" class="sort-filter-btn" onclick="changeSortingFilter('PATCH_ASC')">패치 낮은순 ▲</button>
                 <button id="sort-patch-desc" class="sort-filter-btn" onclick="changeSortingFilter('PATCH_DESC')">패치 높은순 ▼</button>
             </div>
         </div>
 
-        <!-- 3번 아이템: 획득처 이름 정렬 -->
+        <!-- 4번 아이템: 획득처 이름 정렬 -->
         <div class="filter-flex-item">
             <div class="filter-title">abc 획득처 이름 정렬</div>
             <div class="btn-group">
