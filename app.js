@@ -16,6 +16,9 @@ let currentRewardFilters = [];   // [획득처] 다중 토글 누적 저장용 �
 let currentStatusFilter = 'ALL'; // 달성 상태 필터 기록용 변수 (ALL / 미완료 / 완료)
 let currentSearchQuery = '';     // 통합 검색 키워드 실시간 소문자 저장용 변수
 
+// 🌟 [정렬 전용 제어 인덱스 변수 신설] 초기값은 사진 기준인 'PATCH_ASC'(패치 낮은순)로 설정합니다.
+let currentSortFilter = 'PATCH_ASC'; 
+
 /**
  * ------------------------------------------------------------------------------
  * 1. 테마 모드 영구 기억 및 실시간 전환 엔진 (applySavedThemeMode, toggleThemeMode)
@@ -87,7 +90,7 @@ async function fetchData() {
 
             const musicName = getVal(2); // 2번 열: [악보명] 추출
             
-            // 💡 [O/X 치환 가동 인터페이스] 구글 시트 G열의 문자를 판별하여 정식 표기 텍스트로 전환합니다.
+            // O/X 치환 가동 인터페이스
             const rawTradeVal = getVal(6).toUpperCase();
             let tradeText = '-';
             if (rawTradeVal === 'O' || rawTradeVal === 'ㅇ') tradeText = '거래 가능';
@@ -151,6 +154,26 @@ function selectStatusFilter(status) {
 }
 
 /**
+ * 🌟 [신설: 사진 속 정렬 버튼 전용 액티브 스위칭 엔진]
+ * 사용자가 선택한 정렬 방식에 따라 보라색 하이라이트 스타일을 정확하게 토글합니다.
+ */
+function changeSortingFilter(sortType) {
+    currentSortFilter = sortType;
+    
+    // HTML에 생성된 모든 정렬 버튼에서 보라색 액티브 클래스를 일시 제거합니다.
+    document.querySelectorAll('.sort-filter-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // 선택한 조건에 부합하는 단추만 정밀하게 보라색으로 켭니다.
+    if(sortType === 'PATCH_ASC') document.getElementById('sort-patch-asc').classList.add('active');
+    if(sortType === 'PATCH_DESC') document.getElementById('sort-patch-desc').classList.add('active');
+    if(sortType === 'SCORE_ASC') document.getElementById('sort-score-asc').classList.add('active');
+    if(sortType === 'SCORE_DESC') document.getElementById('sort-score-desc').classList.add('active');
+    
+    // 정렬이 변경되었으므로 화면의 악보 리스트를 다시 정렬하여 출력합니다.
+    renderList();
+}
+
+/**
  * ------------------------------------------------------------------------------
  * 3. 중복 없는 데이터 기반 카테고리 [분류] 버튼 생성기 (initMenu)
  * ------------------------------------------------------------------------------
@@ -187,7 +210,6 @@ function selectMainCategory(main, btn) {
  * ------------------------------------------------------------------------------
  */
 function initRewardMenu() {
-    // 💡 [획득처 허브] score(획득처) 데이터를 발취하여 고유 단추 필터를 생성합니다.
     const scoreTypes = [...new Set(rawData.map(item => item.score))].filter(t => t && t !== '-');
     const rewardGroup = document.getElementById('reward-category-group');
     rewardGroup.innerHTML = '';
@@ -290,7 +312,6 @@ function renderList() {
         if (currentRewardFilters.length === 0) {
             filtered = rawData.filter(item => item.main === currentMain);
         } else {
-            // 💡 획득처 서브 버튼 다중 교집합 대조 연산
             filtered = rawData.filter(item => currentRewardFilters.includes(item.score));
         }
     } else {
@@ -310,6 +331,25 @@ function renderList() {
         filtered = filtered.filter(item => checkedItems[item.id]);  
     }
 
+    // 🌟 [정렬 필터 다차원 처리 아키텍처 탑재]
+    // 렌더링 직전 단계에서 사용자가 켠 정렬 버튼에 맞춰 정밀 교차 연산을 수행합니다.
+    filtered.sort((a, b) => {
+        if (currentSortFilter === 'PATCH_ASC' || currentSortFilter === 'PATCH_DESC') {
+            // 패치 컬럼 데이터를 온전한 소수점 수치(Float)로 변환해 크기를 대조합니다.
+            const patchA = parseFloat(a.condition) || 0;
+            const patchB = parseFloat(b.condition) || 0;
+            return currentSortFilter === 'PATCH_ASC' ? patchA - patchB : patchB - patchA;
+        } else if (currentSortFilter === 'SCORE_ASC' || currentSortFilter === 'SCORE_DESC') {
+            // 획득처 컬럼 명칭을 유니코드(가나다순) 문자열 통계 공식으로 오름차순/내림차순 정렬합니다.
+            const scoreA = a.score || '';
+            const scoreB = b.score || '';
+            if (scoreA < scoreB) return currentSortFilter === 'SCORE_ASC' ? -1 : 1;
+            if (scoreA > scoreB) return currentSortFilter === 'SCORE_ASC' ? 1 : -1;
+            return 0;
+        }
+        return 0;
+    });
+
     const showPathColumn = (currentRewardFilters.length > 0 || currentSearchQuery !== '');
     if (showPathColumn) thPath.style.display = ''; 
     else thPath.style.display = 'none'; 
@@ -327,7 +367,6 @@ function renderList() {
         const isChecked = checkedItems[item.id] ? 'checked' : '';
         if(isChecked) tr.classList.add('completed'); 
 
-        // 💡 획득처(item.score) 셀에만 악보 종류별 매핑 강조색을 반영하고 획득방법은 무색 마감
         const textColor = getRewardColor(item.rewardType);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
