@@ -1,6 +1,6 @@
 // app.js - Part 1
 // 🌟 [원상복구] 깃허브 캐시 대신 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
-const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw8fEB1aKJ9ex5SAvhgtqSXqAHrVwwp8g3u0wDr6sZUkbjJnVQ3XOUV-nX2EI7B9mh5/exec';
+const GOOGLE_WEB_APP_URL = 'https://google.com';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
 // 🎯 [오류 영구 파쇄 완결] 로컬 스토리지 공통 이름표 상수를 최선단에 명확하게 신설 정의합니다.
@@ -85,14 +85,14 @@ async function fetchData() {
                 return row[colIdx] !== undefined && row[colIdx] !== null ? String(row[colIdx]).trim() : '';
             };
 
-            // 💡 요청하신 구조대로 1번 열과 2번 열의 직렬화 인덱스 바인딩을 정밀하게 맞교환 완료
-            const musicName = getVal(2); // 2번 열: [악보명] 수집
+            // 💡 [최종 위치 정밀 교정 완결] 1번 열이 악보 번호(newCol), 2번 열이 악보명(musicName)인 스키마 반영
+            const musicName = getVal(2); // 2번 열: [악보명] 추출
 
             return {
-                id: musicName,          // 고유 식별자 (악보명 기준)
+                id: musicName,          // 고유 식별자 (악보명 기준 일치)
                 main: getVal(0),        // 0번 열: [분류]
                 name: musicName,        // 2번 열: [악보명]
-                newCol: getVal(1),      // 1번 열: [추가 열 - 악보 번호]
+                newCol: getVal(1),      // 1번 열: [악보 번호]
                 condition: getVal(3),   // 3번 열: [패치]
                 score: getVal(4),       // 4번 열: [획득처] (문자열 보존)
                 rewardType: getVal(5),  // 5번 열: [획득 방법]
@@ -289,7 +289,7 @@ function renderList() {
     } else {
         filtered = rawData.filter(item => {
             const nameMatch = item.name.toLowerCase().includes(currentSearchQuery);
-            const newColMatch = item.newCol.toLowerCase().includes(currentSearchQuery); // 악보 번호 검색 지원
+            const newColMatch = item.newCol.toLowerCase().includes(currentSearchQuery); // 악보 번호 검색 매칭 지원
             const condMatch = item.condition.toLowerCase().includes(currentSearchQuery);
             const typeMatch = item.rewardType.toLowerCase().includes(currentSearchQuery);
             const rewardMatch = item.rewardContent.toLowerCase().includes(currentSearchQuery);
@@ -323,13 +323,13 @@ function renderList() {
         const textColor = getRewardColor(item.rewardType);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
-        // 💡 교정된 배치 순서(악보명 다음 추가 열)에 맞추어 마크업을 연동 조립합니다.
+        // 💡 [최종 배치 정밀 조립] index.html의 <th> 구성인 악보 번호(item.newCol)가 먼저 오고 악보명(item.name)이 오도록 열 배치 싱크를 완성했습니다.
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
             ${pathTd}
-            <td class="col-name">${item.name}</td>
             <td class="col-new">${item.newCol}</td>
+            <td class="col-name">${item.name}</td>
             <td class="col-cond">${item.condition}</td>
             <td class="col-score">${item.score}</td>
             <td class="col-rw-type" style="color: ${textColor}; font-weight:bold;">${item.rewardType || '-'}</td>
@@ -411,7 +411,6 @@ function calculateChapterProgress(currentItems) {
  * ==============================================================================
  * 🚀 [무결성 순차 제어 아키텍처 및 자동 클릭 물리 트리거 엔진]
  * ==============================================================================
- * 🌟 말씀해주신 대분류 타겟 명칭인 '지역1'로 가상 클릭 초기값을 완벽히 셋업했습니다.
  */
 document.addEventListener('DOMContentLoaded', () => {
     fetchData().then(() => {
