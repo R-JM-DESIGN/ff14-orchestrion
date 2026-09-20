@@ -85,10 +85,13 @@ async function fetchData() {
                 return row[colIdx] !== undefined && row[colIdx] !== null ? String(row[colIdx]).trim() : '';
             };
 
+            // 💡 요청하신 구조대로 1번 열과 2번 열의 직렬화 인덱스 바인딩을 정밀하게 맞교환 완료
+            const musicName = getVal(2); // 2번 열: [악보명] 수집
+
             return {
                 id: musicName,          // 고유 식별자 (악보명 기준)
                 main: getVal(0),        // 0번 열: [분류]
-                name: getval(2),        // 2번 열: [악보명]
+                name: musicName,        // 2번 열: [악보명]
                 newCol: getVal(1),      // 1번 열: [추가 열 - 악보 번호]
                 condition: getVal(3),   // 3번 열: [패치]
                 score: getVal(4),       // 4번 열: [획득처] (문자열 보존)
