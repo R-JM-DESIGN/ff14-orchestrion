@@ -1,6 +1,6 @@
 // app.js - Part 1
 // 🌟 [원상복구] 깃허브 캐시 대신 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
-const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwSIly1Fk7X-VEvsMNTsnDZTIpcPebdab1BAKLWL9oTe8NP0hTxetq3wCiv-Qta4tHK/exec';
+const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw8fEB1aKJ9ex5SAvhgtqSXqAHrVwwp8g3u0wDr6sZUkbjJnVQ3XOUV-nX2EI7B9mh5/exec';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
 // 🎯 [오류 영구 파쇄 완결] 로컬 스토리지 공통 이름표 상수를 최선단에 명확하게 신설 정의합니다.
