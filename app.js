@@ -1,6 +1,6 @@
 // app.js - Part 1
 // 🌟 [원상복구] 깃허브 캐시 대신 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
-const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxY7eALGsOKtXsh0vZ8EtcHigpCykqHDSw1CpfI3zA--8vq7IZbW4XmrN2wYi3AOXtS/exec';
+const GOOGLE_WEB_APP_URL = 'https://google.com';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
 // 🎯 [오류 영구 파쇄 완결] 로컬 스토리지 공통 이름표 상수를 최선단에 명확하게 신설 정의합니다.
@@ -8,16 +8,14 @@ const STORAGE_KEY = 'ff14_achievements_v2';
 
 // [순정 구조 복원] 수집된 데이터 원본 배열과 상수를 연동 호출합니다.
 let rawData = [];
-let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; // 상수를 안정적으로 바라보도록 연동 매핑
+let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; 
 
 // [상태 변수 관리 변수 스코프] 필터링 및 복합 연산에 연동되는 글로벌 제어 인덱스 목록입니다.
-let currentMain = '';            // [분류] 카테고리 기록용 변수 (소분류 변수 제거 상태 유지)
-let currentRewardFilters = [];   // [획득처] 다중 토글 누적 저장용 배열 변수
-let currentStatusFilter = 'ALL'; // 달성 상태 필터 기록용 변수 (ALL / 미완료 / 완료)
-let currentSearchQuery = '';     // 통합 검색 키워드 실시간 소문자 저장용 변수
-
-// 🌟 [정렬 전용 제어 인덱스 변수 신설] 초기값은 사진 기준인 'PATCH_ASC'(패치 낮은순)로 설정합니다.
-let currentSortFilter = 'PATCH_ASC'; 
+let currentMain = '';            
+let currentRewardFilters = [];   
+let currentStatusFilter = 'ALL'; 
+let currentSearchQuery = '';     
+let currentSortFilter = 'PATCH_ASC'; // 정렬 필터용 변수 상태 보존
 
 /**
  * ------------------------------------------------------------------------------
@@ -77,7 +75,11 @@ function toggleThemeMode() {
  */
 async function fetchData() {
     try {
-        const res = await fetch(SHEET_URL);
+        const res = await fetch(SHEET_URL, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'omit'
+        });
         if (!res.ok) throw new Error(`구글 웹 앱 응답 오류 (상태코드: ${res.status})`);
         
         const rows = await res.json();
@@ -89,22 +91,16 @@ async function fetchData() {
             };
 
             const musicName = getVal(2); // 2번 열: [악보명] 추출
-            
-            // O/X 치환 가동 인터페이스
-            const rawTradeVal = getVal(6).toUpperCase();
-            let tradeText = '-';
-            if (rawTradeVal === 'O' || rawTradeVal === 'ㅇ') tradeText = '거래 가능';
-            if (rawTradeVal === 'X' || rawTradeVal === 'ㄴ') tradeText = '거래 불가';
 
             return {
-                id: musicName,          // 고유 식별자 (악보명 기준 일치)
+                id: musicName,          
                 main: getVal(0),        // 0번 열: [분류]
                 name: musicName,        // 2번 열: [악보명]
                 newCol: getVal(1),      // 1번 열: [악보 번호]
                 condition: getVal(3),   // 3번 열: [패치]
                 score: getVal(4),       // 4번 열: [획득처]
                 rewardType: getVal(5),  // 5번 열: [획득 방법]
-                rewardContent: tradeText // 6번 열: [거래 여부] 치환 텍스트 매핑 보존
+                rewardContent: getVal(6) // 6번 열: [거래 여부] 치환 없이 그대로 수집 유지
             };
         }).filter(item => item.name && item.main); 
 
@@ -153,23 +149,13 @@ function selectStatusFilter(status) {
     renderList();
 }
 
-/**
- * 🌟 [신설: 사진 속 정렬 버튼 전용 액티브 스위칭 엔진]
- * 사용자가 선택한 정렬 방식에 따라 보라색 하이라이트 스타일을 정확하게 토글합니다.
- */
 function changeSortingFilter(sortType) {
     currentSortFilter = sortType;
-    
-    // HTML에 생성된 모든 정렬 버튼에서 보라색 액티브 클래스를 일시 제거합니다.
     document.querySelectorAll('.sort-filter-btn').forEach(btn => btn.classList.remove('active'));
-    
-    // 선택한 조건에 부합하는 단추만 정밀하게 보라색으로 켭니다.
     if(sortType === 'PATCH_ASC') document.getElementById('sort-patch-asc').classList.add('active');
     if(sortType === 'PATCH_DESC') document.getElementById('sort-patch-desc').classList.add('active');
     if(sortType === 'SCORE_ASC') document.getElementById('sort-score-asc').classList.add('active');
     if(sortType === 'SCORE_DESC') document.getElementById('sort-score-desc').classList.add('active');
-    
-    // 정렬이 변경되었으므로 화면의 악보 리스트를 다시 정렬하여 출력합니다.
     renderList();
 }
 
@@ -331,16 +317,13 @@ function renderList() {
         filtered = filtered.filter(item => checkedItems[item.id]);  
     }
 
-    // 🌟 [정렬 필터 다차원 처리 아키텍처 탑재]
-    // 렌더링 직전 단계에서 사용자가 켠 정렬 버튼에 맞춰 정밀 교차 연산을 수행합니다.
+    // 정렬 필터 처리
     filtered.sort((a, b) => {
         if (currentSortFilter === 'PATCH_ASC' || currentSortFilter === 'PATCH_DESC') {
-            // 패치 컬럼 데이터를 온전한 소수점 수치(Float)로 변환해 크기를 대조합니다.
             const patchA = parseFloat(a.condition) || 0;
             const patchB = parseFloat(b.condition) || 0;
             return currentSortFilter === 'PATCH_ASC' ? patchA - patchB : patchB - patchA;
         } else if (currentSortFilter === 'SCORE_ASC' || currentSortFilter === 'SCORE_DESC') {
-            // 획득처 컬럼 명칭을 유니코드(가나다순) 문자열 통계 공식으로 오름차순/내림차순 정렬합니다.
             const scoreA = a.score || '';
             const scoreB = b.score || '';
             if (scoreA < scoreB) return currentSortFilter === 'SCORE_ASC' ? -1 : 1;
@@ -370,6 +353,17 @@ function renderList() {
         const textColor = getRewardColor(item.rewardType);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
+        // 🌟 [사진 합성 스크린샷 컬러 마크업 구현]
+        // 시트 원본의 O/X 글자 종류를 판별하여 눈이 편안한 초록/빨강 볼드 템플릿 태그로 변형하여 출력합니다.
+        const originTrade = (item.rewardContent || '-').toUpperCase().replace(/\s/g, '');
+        let tradeMarkup = `<span>${item.rewardContent || '-'}</span>`;
+        
+        if (originTrade === 'O' || originTrade === 'ㅇ') {
+            tradeMarkup = `<span style="color: #2ec4b6; font-weight: 800; font-size: 1.15em;">O</span>`;
+        } else if (originTrade === 'X' || originTrade === 'ㄴ') {
+            tradeMarkup = `<span style="color: #cc444b; font-weight: 800; font-size: 1.15em;">X</span>`;
+        }
+
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
@@ -379,7 +373,7 @@ function renderList() {
             <td class="col-cond">${item.condition}</td>
             <td class="col-score" style="color: ${textColor}; font-weight:bold;">${item.score || '-'}</td>
             <td class="col-rw-type">${item.rewardType || '-'}</td>
-            <td class="col-rw-content">${item.rewardContent || '-'}</td>
+            <td class="col-rw-content">${tradeMarkup}</td> <!-- 💡 컬러링 마크업 바인딩 -->
         `;
         listBody.appendChild(tr);
     });
