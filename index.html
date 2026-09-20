@@ -35,6 +35,8 @@
             --completed-path-color: #52637a;
             --top-btn-bg: #3a86ff;
             --top-btn-text: #ffffff;
+            /* 🌟 사진 속 정렬 선택 색상 (보라색 보존 변수) 신설 */
+            --purple-sort-color: #9d4edd;
         }
 
         /* [라이트 모드 전환 시 교체될 실시간 색상 변수 선언] */
@@ -63,6 +65,7 @@
             --completed-path-color: #3b82f6;
             --top-btn-bg: #023e8a;
             --top-btn-text: #ffffff;
+            --purple-sort-color: #7b2cbf;
         }
 
         body {
@@ -210,6 +213,18 @@
             font-weight: bold;
         }
         
+        /* 🌟 [정렬 줄 세우기 컴포넌트 신설] 필터와 정렬 상자가 한 행에 공존하도록 플렉스박스화 */
+        .filter-flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%;
+        }
+        .filter-flex-item {
+            flex: 1;
+            min-width: 320px;
+        }
+        
         .search-box-container {
             margin-bottom: 20px;
             background: var(--panel-bg);
@@ -292,6 +307,14 @@
         button.status-filter-btn.active {
             background: var(--status-color);
             border-color: var(--status-color);
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        /* 🌟 [사진 전용 정렬 버튼 테마 스타일 선언] 선택 시 이식되는 이쁜 보라색 처리 기믹 */
+        button.sort-filter-btn.active {
+            background: var(--purple-sort-color);
+            border-color: var(--purple-sort-color);
             color: #fff;
             font-weight: 600;
         }
@@ -386,12 +409,11 @@
         }
         tr.completed td.col-cond { color: var(--completed-cond-color); }
         
-        /* 테이블 열 정밀 고정 및 비율 분배 (총합 너비 1350px 균형 유지) */
-        .col-new { width: 100px; }       /* 악보 번호 */
-        .col-cond { width: 90px; }       /* 패치 */
-        .col-score { width: 230px; }      /* 획득처 */
-        .col-rw-type { width: 340px; }    /* 획득 방법 (획득처보다 넓게 배치) */
-        .col-rw-content { width: 110px; } /* 거래 여부 */
+        .col-new { width: 100px; }       
+        .col-cond { width: 90px; }       
+        .col-score { width: 230px; }      
+        .col-rw-type { width: 340px; }    
+        .col-rw-content { width: 110px; } 
 
         th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-score, th.col-rw-type, th.col-rw-content {
             text-align: center;
@@ -469,17 +491,40 @@
         </div>
     </div>
 
-    <div class="filter-title">✔️ 완료 여부 필터</div>
-    <div class="btn-group">
-        <button id="status-all" class="status-filter-btn active" onclick="selectStatusFilter('ALL')">전체 항목 보기</button>
-        <button id="status-uncompleted" class="status-filter-btn" onclick="selectStatusFilter('UNCOMPLETED')">미완료 항목만 보기</button>
-        <button id="status-completed" class="status-filter-btn" onclick="selectStatusFilter('COMPLETED')">완료된 항목만 보기</button>
+    <!-- 🌟 [사진 레이아웃 대수선 복원] 완료 여부 필터 옆에 나란히 배치하도록 플렉스 행 결합 -->
+    <div class="filter-flex-row">
+        <!-- 1번 아이템: 완료 여부 필터 -->
+        <div class="filter-flex-item">
+            <div class="filter-title">✔️ 완료 여부 필터</div>
+            <div class="btn-group">
+                <button id="status-all" class="status-filter-btn active" onclick="selectStatusFilter('ALL')">전체 항목 보기</button>
+                <button id="status-uncompleted" class="status-filter-btn" onclick="selectStatusFilter('UNCOMPLETED')">미완료 항목만 보기</button>
+                <button id="status-completed" class="status-filter-btn" onclick="selectStatusFilter('COMPLETED')">완료된 항목만 보기</button>
+            </div>
+        </div>
+
+        <!-- 2번 아이템: 패치 버전 정렬 (사진 복사형) -->
+        <div class="filter-flex-item">
+            <div class="filter-title">🔢 패치 버전 정렬</div>
+            <div class="btn-group">
+                <button id="sort-patch-asc" class="sort-filter-btn active" onclick="changeSortingFilter('PATCH_ASC')">패치 낮은순 ▲</button>
+                <button id="sort-patch-desc" class="sort-filter-btn" onclick="changeSortingFilter('PATCH_DESC')">패치 높은순 ▼</button>
+            </div>
+        </div>
+
+        <!-- 3번 아이템: 획득처 이름 정렬 (사진 복사형) -->
+        <div class="filter-flex-item">
+            <div class="filter-title">abc 획득처 이름 정렬</div>
+            <div class="btn-group">
+                <button id="sort-score-asc" class="sort-filter-btn" onclick="changeSortingFilter('SCORE_ASC')">획득처 이름순 ▲</button>
+                <button id="sort-score-desc" class="sort-filter-btn" onclick="changeSortingFilter('SCORE_DESC')">획득처 역순 ▼</button>
+            </div>
+        </div>
     </div>
 
     <div class="filter-title">📁 카테고리 선택</div>
     <div id="main-category-group" class="btn-group"></div>
 
-    <!-- 💡 제공해주신 레이아웃 명칭을 기반으로 '획득처별 모아보기' 필터 스위치 허브 전면 갱신 -->
     <div class="filter-title">🎁 획득처별 모아보기</div>
     <div id="reward-category-group" class="btn-group"></div>
 </div>
