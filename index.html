@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FF14 오케스트리온 체크리스트</title>
-    <!-- 프리텐다드(Pretendard) 웹 폰트 로드 -->
+    <!-- 프리텐다드(Pretendard) 웹 폰트 로드 (타임아웃 원천 방어 완성형 주소) -->
     <link rel="stylesheet" href="https://googleapis.com" />
     <!-- 깃허브 favicon 404 에러 방지용 투명 아이콘 임베딩 생성 -->
     <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
@@ -35,7 +35,7 @@
             --completed-path-color: #52637a;
             --top-btn-bg: #3a86ff;
             --top-btn-text: #ffffff;
-            /* 🌟 사진 속 정렬 선택 색상 (보라색 보존 변수) 신설 */
+            /* 사진 속 정렬 선택 색상 (보라색 테마 변수 신설) */
             --purple-sort-color: #9d4edd;
         }
 
@@ -213,7 +213,7 @@
             font-weight: bold;
         }
         
-        /* 🌟 [정렬 줄 세우기 컴포넌트 신설] 필터와 정렬 상자가 한 행에 공존하도록 플렉스박스화 */
+        /* [정렬 줄 세우기 컴포넌트] 필터와 정렬 상자가 한 행에 공존하도록 플렉스박스화 */
         .filter-flex-row {
             display: flex;
             flex-wrap: wrap;
@@ -311,7 +311,7 @@
             font-weight: 600;
         }
         
-        /* 🌟 [사진 전용 정렬 버튼 테마 스타일 선언] 선택 시 이식되는 이쁜 보라색 처리 기믹 */
+        /* [사진 전용 정렬 버튼 테마 스타일 선언] 선택 시 이식되는 이쁜 보라색 처리 기믹 */
         button.sort-filter-btn.active {
             background: var(--purple-sort-color);
             border-color: var(--purple-sort-color);
@@ -403,17 +403,30 @@
             word-break: keep-all;
         } 
 
-        td.col-cond, td.col-new, td.col-score, td.col-rw-type, td.col-rw-content { 
+        /* 패치, 악보 번호, 거래 여부 셀은 깔끔한 기본 크기를 유지합니다. */
+        td.col-cond, td.col-new, td.col-rw-content { 
             font-size: 0.85em; 
             text-align: center;
         }
         tr.completed td.col-cond { color: var(--completed-cond-color); }
+
+        /* 🌟 [가독성 튜닝 최적화] 사진 속 연동 디자인처럼 폰트를 키우고 뚜렷하게 강조 조율합니다. */
+        td.col-score, td.col-rw-type {
+            font-size: 1.02em !important;   /* 1.02em으로 글자 크기 대폭 확장 */
+            font-weight: 500 !important;   /* 명확한 미디움 볼드 웨이트 부여 */
+            letter-spacing: -0.01em;       /* 자간을 컴팩트하게 압축 밀착 */
+            line-height: 1.55;             /* 줄간격 최적화 */
+        }
         
-        .col-new { width: 100px; }       
-        .col-cond { width: 90px; }       
-        .col-score { width: 230px; }      
-        .col-rw-type { width: 340px; }    
-        .col-rw-content { width: 110px; } 
+        td.col-score { text-align: center; }
+        td.col-rw-type { text-align: left; padding-left: 20px !important; } /* 왼쪽 정렬 배정 */
+        
+        /* 테이블 열 정밀 고정 및 비율 분배 */
+        .col-new { width: 100px; }       /* 악보 번호 */
+        .col-cond { width: 90px; }       /* 패치 */
+        .col-score { width: 230px; }      /* 획득처 너비 */
+        .col-rw-type { width: 340px; }    /* 획득 방법 너비 */
+        .col-rw-content { width: 110px; } /* 거래 여부 */
 
         th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-score, th.col-rw-type, th.col-rw-content {
             text-align: center;
@@ -491,7 +504,7 @@
         </div>
     </div>
 
-    <!-- 🌟 [사진 레이아웃 대수선 복원] 완료 여부 필터 옆에 나란히 배치하도록 플렉스 행 결합 -->
+    <!-- [정렬 그룹 수평 배치 컨테이너] 완료 여부 필터 옆에 나란히 배치하도록 플렉스 행 결합 -->
     <div class="filter-flex-row">
         <!-- 1번 아이템: 완료 여부 필터 -->
         <div class="filter-flex-item">
@@ -503,7 +516,7 @@
             </div>
         </div>
 
-        <!-- 2번 아이템: 패치 버전 정렬 (사진 복사형) -->
+        <!-- 2번 아이템: 패치 버전 정렬 -->
         <div class="filter-flex-item">
             <div class="filter-title">🔢 패치 버전 정렬</div>
             <div class="btn-group">
@@ -512,7 +525,7 @@
             </div>
         </div>
 
-        <!-- 3번 아이템: 획득처 이름 정렬 (사진 복사형) -->
+        <!-- 3번 아이템: 획득처 이름 정렬 -->
         <div class="filter-flex-item">
             <div class="filter-title">abc 획득처 이름 정렬</div>
             <div class="btn-group">
