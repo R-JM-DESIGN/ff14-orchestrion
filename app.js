@@ -1,6 +1,6 @@
 // app.js - Part 1
 // 🌟 [원상복구] 깃허브 캐시 대신 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
-const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw8fEB1aKJ9ex5SAvhgtqSXqAHrVwwp8g3u0wDr6sZUkbjJnVQ3XOUV-nX2EI7B9mh5/exec';
+const GOOGLE_WEB_APP_URL = 'https://google.com';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
 // 🎯 [오류 영구 파쇄 완결] 로컬 스토리지 공통 이름표 상수를 최선단에 명확하게 신설 정의합니다.
@@ -12,7 +12,7 @@ let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; // 상�
 
 // [상태 변수 관리 변수 스코프] 필터링 및 복합 연산에 연동되는 글로벌 제어 인덱스 목록입니다.
 let currentMain = '';            // [분류] 카테고리 기록용 변수 (소분류 변수 제거 상태 유지)
-let currentRewardFilters = [];   // [획득처] 다중 토글 누적 저장용 배열 변수 (획득처 기준으로 변환)
+let currentRewardFilters = [];   // [획득처] 다중 토글 누적 저장용 배열 변수
 let currentStatusFilter = 'ALL'; // 달성 상태 필터 기록용 변수 (ALL / 미완료 / 완료)
 let currentSearchQuery = '';     // 통합 검색 키워드 실시간 소문자 저장용 변수
 
@@ -86,6 +86,12 @@ async function fetchData() {
             };
 
             const musicName = getVal(2); // 2번 열: [악보명] 추출
+            
+            // 💡 [O/X 치환 가동 인터페이스] 구글 시트 G열의 문자를 판별하여 정식 표기 텍스트로 전환합니다.
+            const rawTradeVal = getVal(6).toUpperCase();
+            let tradeText = '-';
+            if (rawTradeVal === 'O' || rawTradeVal === 'ㅇ') tradeText = '거래 가능';
+            if (rawTradeVal === 'X' || rawTradeVal === 'ㄴ') tradeText = '거래 불가';
 
             return {
                 id: musicName,          // 고유 식별자 (악보명 기준 일치)
@@ -93,9 +99,9 @@ async function fetchData() {
                 name: musicName,        // 2번 열: [악보명]
                 newCol: getVal(1),      // 1번 열: [악보 번호]
                 condition: getVal(3),   // 3번 열: [패치]
-                score: getVal(4),       // 4번 열: [획득처] (문자열 보존)
+                score: getVal(4),       // 4번 열: [획득처]
                 rewardType: getVal(5),  // 5번 열: [획득 방법]
-                rewardContent: getVal(6)// 6번 열: [거래 여부]
+                rewardContent: tradeText // 6번 열: [거래 여부] 치환 텍스트 매핑 보존
             };
         }).filter(item => item.name && item.main); 
 
@@ -181,7 +187,7 @@ function selectMainCategory(main, btn) {
  * ------------------------------------------------------------------------------
  */
 function initRewardMenu() {
-    // 💡 [획득처 개편] 기존 rewardType 대신 score(획득처) 데이터를 추출하여 고유 단추 필터를 오토 빌드합니다.
+    // 💡 [획득처 허브] score(획득처) 데이터를 발취하여 고유 단추 필터를 생성합니다.
     const scoreTypes = [...new Set(rawData.map(item => item.score))].filter(t => t && t !== '-');
     const rewardGroup = document.getElementById('reward-category-group');
     rewardGroup.innerHTML = '';
@@ -284,7 +290,7 @@ function renderList() {
         if (currentRewardFilters.length === 0) {
             filtered = rawData.filter(item => item.main === currentMain);
         } else {
-            // 💡 [획득처 필터 적용] 모아보기 필터 선택 시 rewardType 대신 score(획득처) 컬럼 데이터와 교집합 대조를 수행합니다.
+            // 💡 획득처 서브 버튼 다중 교집합 대조 연산
             filtered = rawData.filter(item => currentRewardFilters.includes(item.score));
         }
     } else {
@@ -321,7 +327,7 @@ function renderList() {
         const isChecked = checkedItems[item.id] ? 'checked' : '';
         if(isChecked) tr.classList.add('completed'); 
 
-        // 💡 [강조 색상 스와프 연산] 획득 방법에서 색상을 배제하고, 대신 획득처(score) 텍스트에 동적 강조 컬러를 기입합니다.
+        // 💡 획득처(item.score) 셀에만 악보 종류별 매핑 강조색을 반영하고 획득방법은 무색 마감
         const textColor = getRewardColor(item.rewardType);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
