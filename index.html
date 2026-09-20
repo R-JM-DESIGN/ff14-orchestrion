@@ -410,23 +410,31 @@
         }
         tr.completed td.col-cond { color: var(--completed-cond-color); }
 
-        /* 🌟 [가독성 튜닝 최적화] 사진 속 연동 디자인처럼 폰트를 키우고 뚜렷하게 강조 조율합니다. */
-        td.col-score, td.col-rw-type {
-            font-size: 1.02em !important;   /* 1.02em으로 글자 크기 대폭 확장 */
-            font-weight: 500 !important;   /* 명확한 미디움 볼드 웨이트 부여 */
-            letter-spacing: -0.01em;       /* 자간을 컴팩트하게 압축 밀착 */
-            line-height: 1.55;             /* 줄간격 최적화 */
+        /* 🌟 [획득처 항목 헤비 볼드체 변환 패치] */
+        td.col-score {
+            font-size: 1.02em !important;   /* 크고 뚜렷하게 확장된 크기 유지 */
+            font-weight: 700 !important;   /* 500에서 700(헤비 볼드)으로 대폭 상향하여 강렬하게 강조 */
+            letter-spacing: -0.01em;
+            line-height: 1.55;
+            text-align: center;
+        }
+
+        /* 🌟 [획득 방법 항목 크기 정밀 미세 축소 패치] */
+        td.col-rw-type {
+            font-size: 0.93em !important;   /* 기존 1.02em에서 아주 조금만 컴팩트하게 줄여 밸런싱 수립 */
+            font-weight: 500 !important;   /* 뚜렷하게 보여주는 볼드 속성은 그대로 보존 */
+            letter-spacing: -0.01em;
+            line-height: 1.55;
+            text-align: left; 
+            padding-left: 20px !important;
         }
         
-        td.col-score { text-align: center; }
-        td.col-rw-type { text-align: left; padding-left: 20px !important; } /* 왼쪽 정렬 배정 */
-        
         /* 테이블 열 정밀 고정 및 비율 분배 */
-        .col-new { width: 100px; }       /* 악보 번호 */
-        .col-cond { width: 90px; }       /* 패치 */
-        .col-score { width: 230px; }      /* 획득처 너비 */
-        .col-rw-type { width: 340px; }    /* 획득 방법 너비 */
-        .col-rw-content { width: 110px; } /* 거래 여부 */
+        .col-new { width: 100px; }       
+        .col-cond { width: 90px; }       
+        .col-score { width: 230px; }      
+        .col-rw-type { width: 340px; }    
+        .col-rw-content { width: 110px; } 
 
         th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-score, th.col-rw-type, th.col-rw-content {
             text-align: center;
@@ -437,6 +445,7 @@
             height: 18px;
             cursor: pointer;
         }
+
         /* [수정 완료] 글자를 컴팩트하게 줄이고, 눈에 안 띄는 연한 회색+투명도 필터링 마감 */
         footer {
             max-width: 1500px;
