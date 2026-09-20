@@ -11,13 +11,11 @@ let rawData = [];
 let checkedItems = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; 
 
 // [상태 변수 관리 변수 스코프] 필터링 및 복합 연산에 연동되는 글로벌 제어 인덱스 목록입니다.
-let currentMain = '';            
-let currentRewardFilters = [];   
-let currentStatusFilter = 'ALL'; 
-let currentSearchQuery = '';     
-
-// 🌟 [기본 정렬 설정 갱신] 접속 시 최초 화면 정렬 디폴트값을 요청하신 'NUM_ASC'(번호순)로 지정합니다.
-let currentSortFilter = 'NUM_ASC'; 
+let currentMain = '';            // [분류] 카테고리 기록용 변수
+let currentRewardFilters = [];   // [획득처] 다중 토글 누적 저장용 배열 변수
+let currentStatusFilter = 'ALL'; // 달성 상태 필터 기록용 변수 (ALL / 미완료 / 완료)
+let currentSearchQuery = '';     // 통합 검색 키워드 실시간 소문자 저장용 변수
+let currentSortFilter = 'NUM_ASC'; // 기본 정렬값: 번호순
 
 /**
  * ------------------------------------------------------------------------------
@@ -102,7 +100,7 @@ async function fetchData() {
                 condition: getVal(3),   // 3번 열: [패치]
                 score: getVal(4),       // 4번 열: [획득처]
                 rewardType: getVal(5),  // 5번 열: [획득 방법]
-                rewardContent: getVal(6) // 6번 열: [거래 여부] 원본 데이터 수집
+                rewardContent: getVal(6) // 6번 열: [거래 여부]
             };
         }).filter(item => item.name && item.main); 
 
@@ -152,16 +150,14 @@ function selectStatusFilter(status) {
 }
 
 /**
- * 🌟 [정렬 버튼 전용 액티브 스위칭 엔진 보완]
- * 악보 번호 정렬(NUM_ASC, NUM_DESC) 조건이 추가됨에 따라 보라색 하이라이트를 정밀 제어합니다.
+ * [정렬 버튼 전용 액티브 스위칭 엔진]
+ * 사용자가 선택한 정렬 방식에 따라 보라색 하이라이트 스타일을 정확하게 토글합니다.
  */
 function changeSortingFilter(sortType) {
     currentSortFilter = sortType;
     
-    // 모든 정렬 버튼에서 보라색 액티브 클래스를 일시 제거합니다.
     document.querySelectorAll('.sort-filter-btn').forEach(btn => btn.classList.remove('active'));
     
-    // 선택한 조건에 부합하는 단추만 정밀하게 보라색으로 켭니다.
     if(sortType === 'NUM_ASC') document.getElementById('sort-num-asc').classList.add('active');
     if(sortType === 'NUM_DESC') document.getElementById('sort-num-desc').classList.add('active');
     if(sortType === 'PATCH_ASC') document.getElementById('sort-patch-asc').classList.add('active');
@@ -169,7 +165,6 @@ function changeSortingFilter(sortType) {
     if(sortType === 'SCORE_ASC') document.getElementById('sort-score-asc').classList.add('active');
     if(sortType === 'SCORE_DESC') document.getElementById('sort-score-desc').classList.add('active');
     
-    // 정렬이 변경되었으므로 화면의 악보 리스트를 다시 정렬하여 출력합니다.
     renderList();
 }
 
@@ -192,10 +187,13 @@ function initMenu() {
     });
 }
 
+/**
+ * 🌟 [다중 교집합 필터 우회 패치]
+ * 대분류 카테고리를 변경해도 하단 획득처 다중 선택 배열(currentRewardFilters)이 
+ * 비워지지 않고 기존에 켜둔 선택을 고스란히 유지하며 교차 계산으로 이어집니다.
+ */
 function selectMainCategory(main, btn) {
     currentMain = main;
-    currentRewardFilters = []; 
-    updateRewardFilterUI();
 
     document.querySelectorAll('#main-category-group button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -231,6 +229,11 @@ function initRewardMenu() {
     });
 }
 
+/**
+ * 🌟 [다중 교집합 필터 우회 패치]
+ * 하단의 서브 모아보기 버튼을 조작할 때도 상단의 대분류 카테고리(currentMain) 
+ * 기록이 강제로 꺼지지 않고 공존하며 교차 배열 연산을 처리합니다.
+ */
 function selectRewardMultiFilter(type) {
     if (type === 'ALL') {
         currentRewardFilters = []; 
@@ -240,7 +243,6 @@ function selectRewardMultiFilter(type) {
             currentRewardFilters.splice(index, 1); 
         } else {
             currentRewardFilters.push(type); 
-            document.querySelectorAll('#main-category-group button').forEach(b => b.classList.remove('active'));
         }
     }
     
@@ -278,6 +280,9 @@ function updatePathDisplay() {
     if (!display) return;
     if (currentSearchQuery) {
         display.textContent = `🔍 전체 항목 중에서 '${currentSearchQuery}' 검색 결과`;
+    } else if (currentMain && currentRewardFilters.length > 0) {
+        // 대분류와 획득처 필터가 동시 활성화 시 상단 경로 단추 결합 표출
+        display.textContent = `📁 ${currentMain} ➔ 🎁 [다중 필터] 획득처 : ${currentRewardFilters.join(', ')}`;
     } else if (currentRewardFilters.length > 0) {
         display.textContent = `🎁 [다중 필터] 획득처 : ${currentRewardFilters.join(', ')}`;
     } else {
@@ -286,17 +291,16 @@ function updatePathDisplay() {
 }
 
 /**
- * 🌟 [새로고침: 16대 획득처 전용 동적 색상 매핑 엔진]
+ * [16대 획득처 전용 동적 색상 매핑 엔진]
  * 사용자가 시트 E열(획득처)에 기입한 텍스트 문장을 감지하여 다크/라이트 모드 최적화 색상을 실시간 반환합니다.
  */
 function getRewardColor(type) {
     if (!type || type === '-') return '#666666'; 
     const isLight = document.body.classList.contains("light-mode");
     
-    // 💡 [개편 핵심] 기존의 rewardType 대조 방식을 폐기하고, 입력받은 획득처(score) 문장을 직접 대조 분기합니다.
     switch (type) {
         case '상점 구입': return isLight ? '#b26a00' : '#ffca28';      
-        case '보물 찾기': return isLight ? '#b24a00' : '#ff9f1c';      
+        case '보물 찾기': return isLight ? '#b24a00' : '#ff9100';      
         case '제작': return isLight ? '#00838f' : '#00e5ff';          
         case '골드 소서': return isLight ? '#c2185b' : '#ff4081';      
         case '우호 부족': return isLight ? '#00796b' : '#69f0ae';      
@@ -311,7 +315,7 @@ function getRewardColor(type) {
         case '퀘스트': return isLight ? '#424242' : '#e0e0e0';         
         case '우주 개척': return isLight ? '#4c058a' : '#7209b7';      
         case '던전': return isLight ? '#0077b6' : '#48cae4';          
-        default: return isLight ? '#14746f' : '#5bc0be'; // 예외 방어용 민트 코드 보존
+        default: return isLight ? '#14746f' : '#5bc0be'; 
     }
 }
 
@@ -323,13 +327,17 @@ function renderList() {
 
     let filtered = [];
     
+    // 🌟 [다중 교집합 필터 연산 아키텍처 공식 탑재]
     if (!currentSearchQuery) {
-        if (currentRewardFilters.length === 0) {
-            filtered = rawData.filter(item => item.main === currentMain);
-        } else {
-            filtered = rawData.filter(item => currentRewardFilters.includes(item.score));
+        // 1단계: 선택한 대분류 카테고리(`currentMain`) 필터링을 기본 풀로 삼습니다.
+        filtered = rawData.filter(item => item.main === currentMain);
+        
+        // 2단계: 획득처별 모아보기가 켜져있다면 대분류 풀 안에서 한 번 더 축소 교집합을 걸러냅니다.
+        if (currentRewardFilters.length > 0) {
+            filtered = filtered.filter(item => currentRewardFilters.includes(item.score));
         }
     } else {
+        // 검색 쿼리가 가동 중일 때의 검색 우선 정렬
         filtered = rawData.filter(item => {
             const nameMatch = item.name.toLowerCase().includes(currentSearchQuery);
             const newColMatch = item.newCol.toLowerCase().includes(currentSearchQuery);
@@ -346,7 +354,7 @@ function renderList() {
         filtered = filtered.filter(item => checkedItems[item.id]);  
     }
 
-    // 악보 번호 기준 기본 정렬 결합
+    // 악보 번호 기준 기본 고정 정렬 결합
     filtered.sort((a, b) => {
         if (currentSortFilter === 'NUM_ASC' || currentSortFilter === 'NUM_DESC') {
             const numA = parseInt(a.newCol.replace(/[^0-9]/g, '')) || 0;
@@ -365,7 +373,8 @@ function renderList() {
         }
         return 0;
     });
-    const showPathColumn = (currentRewardFilters.length > 0 || currentSearchQuery !== '');
+    // 다중 필터 작동 조건 시 분류 열 확장 스위칭 로직 고정
+    const showPathColumn = (currentSearchQuery !== '' || (currentRewardFilters.length > 0 && !currentMain));
     if (showPathColumn) thPath.style.display = ''; 
     else thPath.style.display = 'none'; 
 
@@ -382,8 +391,6 @@ function renderList() {
         const isChecked = checkedItems[item.id] ? 'checked' : '';
         if(isChecked) tr.classList.add('completed'); 
 
-        // 🌟 [지정 색상 파이프라인 변환 기입]
-        // item.score(획득처 이름 자체)를 라이브러리에 밀어 넣어 고유 카테고리 색상을 취득합니다.
         const textColor = getRewardColor(item.score);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
@@ -410,12 +417,8 @@ function renderList() {
         listBody.appendChild(tr);
     });
 
-    if (currentSearchQuery || currentRewardFilters.length > 0) {
-        calculateChapterProgress(filtered);
-    } else {
-        const currentViewItems = rawData.filter(item => item.main === currentMain);
-        calculateChapterProgress(currentViewItems);
-    }
+    // 하단 챕터별 게이지 연산 시 현재 다중 교차 필터링된 개수를 온전히 넘겨 실시간 동기화합니다.
+    calculateChapterProgress(filtered);
 }
 
 function toggleItem(id, checkbox) {
@@ -430,13 +433,7 @@ function toggleItem(id, checkbox) {
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedItems)); 
     calculateTotalProgress();
-
-    if (currentStatusFilter !== 'ALL' || currentSearchQuery || currentRewardFilters.length > 0) {
-        renderList();
-    } else {
-        const currentViewItems = rawData.filter(item => item.main === currentMain);
-        calculateChapterProgress(currentViewItems);
-    }
+    renderList();
 }
 
 function calculateTotalProgress() {
@@ -457,7 +454,7 @@ function calculateChapterProgress(currentItems) {
     const total = currentItems.length;
     
     if (currentSearchQuery) document.getElementById('chapter-percent').parentElement.firstChild.textContent = "현재 검색 항목 달성도: ";
-    else if (currentRewardFilters.length > 0) document.getElementById('chapter-percent').parentElement.firstChild.textContent = "선택 보상 달성도: ";
+    else if (currentRewardFilters.length > 0) document.getElementById('chapter-percent').parentElement.firstChild.textContent = "선택 조건 달성도: ";
     else document.getElementById('chapter-percent').parentElement.firstChild.textContent = "현재 필터 달성도: ";
 
     let exactTotal = total;
