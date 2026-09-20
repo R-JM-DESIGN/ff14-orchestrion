@@ -213,17 +213,28 @@
             font-weight: bold;
         }
         
-        /* [정렬 줄 세우기 컴포넌트] 필터와 정렬 상자가 한 행에 공존하도록 플렉스박스화 */
+        /* 🌟 [정렬 레이아웃 비율 전면 개편] */
+        /* 필터들이 한 줄을 꽉 채우며 공백 없이 밀착 배치되도록 비율 연산 체계를 리팩토링했습니다. */
         .filter-flex-row {
             display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
+            flex-wrap: nowrap; /* 💡 화면이 작아지기 전까지는 강제로 아래로 떨어지지 않도록 설정 */
+            gap: 15px;         /* 상자 사이의 여백을 20px에서 15px로 더 컴팩트하게 밀착 */
             width: 100%;
         }
-        .filter-flex-item {
-            flex: 1;
-            /* 💡 정렬 블록이 3줄로 늘어남에 따라 브레이크포인트 최소 너비를 유연하게 재조정 */
-            min-width: 280px; 
+        
+        /* 🌟 [완료 여부 필터 칸 전폭 확장] */
+        /* 세 단추가 아래로 깨져서 두 줄이 되지 않도록 가로 지분 비율(flex-grow)을 다른 상자들보다 2배 이상 넓게 배정합니다. */
+        .filter-flex-row .filter-flex-item:nth-child(1) {
+            flex: 2.2;         
+            min-width: 430px;  /* 세 버튼이 수평으로 완벽히 펼쳐져 한 줄로 고정될 수 있는 최소 안전 너비 확보 */
+        }
+        
+        /* 나머지 세 종류의 정렬 단추 상자들은 오른쪽 남는 공간을 고르게 분할 흡수하며 꽉 채우도록 설정합니다. */
+        .filter-flex-row .filter-flex-item:nth-child(2),
+        .filter-flex-row .filter-flex-item:nth-child(3),
+        .filter-flex-row .filter-flex-item:nth-child(4) {
+            flex: 1;           
+            min-width: 250px;  
         }
         
         .search-box-container {
@@ -312,7 +323,7 @@
             font-weight: 600;
         }
         
-        /* [정렬 버튼 테마 스타일 선언] 선택 시 이식되는 보라색 하이라이트 유지 */
+        /* [정렬 버튼 테마 스타일 선언] 선택 시 이식되는 이쁜 보라색 처리 기믹 */
         button.sort-filter-btn.active {
             background: var(--purple-sort-color);
             border-color: var(--purple-sort-color);
@@ -404,7 +415,6 @@
             word-break: keep-all;
         } 
 
-        /* 패치, 악보 번호, 거래 여부 셀 기본 스타일 */
         td.col-cond, td.col-new, td.col-rw-content { 
             font-size: 0.85em; 
             text-align: center;
@@ -446,6 +456,7 @@
             height: 18px;
             cursor: pointer;
         }
+
         /* [수정 완료] 글자를 컴팩트하게 줄이고, 눈에 안 띄는 연한 회색+투명도 필터링 마감 */
         footer {
             max-width: 1500px;
