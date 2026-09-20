@@ -524,19 +524,19 @@
         </div>
     </div>
 
-    <!-- [정렬 그룹 수평 배치 컨테이너] 3가지 정렬 컴포넌트가 수평 플렉스로 구성됩니다 -->
+    <!-- [정렬 그룹 수평 배치 컨테이너] 4가지 컴포넌트가 공백 없이 수평 배치됩니다 -->
     <div class="filter-flex-row">
-        <!-- 1번 아이템: 완료 여부 필터 -->
+        <!-- 1번 아이템: 🌟 완료 여부에서 '보유 여부' 텍스트로 명칭 전면 치환 완료 -->
         <div class="filter-flex-item">
-            <div class="filter-title">✔️ 완료 여부 필터</div>
+            <div class="filter-title">✔️ 보유 여부 필터</div>
             <div class="btn-group">
                 <button id="status-all" class="status-filter-btn active" onclick="selectStatusFilter('ALL')">전체 항목 보기</button>
-                <button id="status-uncompleted" class="status-filter-btn" onclick="selectStatusFilter('UNCOMPLETED')">미완료 항목만 보기</button>
-                <button id="status-completed" class="status-filter-btn" onclick="selectStatusFilter('COMPLETED')">완료된 항목만 보기</button>
+                <button id="status-uncompleted" class="status-filter-btn" onclick="selectStatusFilter('UNCOMPLETED')">미보유 항목만 보기</button>
+                <button id="status-completed" class="status-filter-btn" onclick="selectStatusFilter('COMPLETED')">보유 항목만 보기</button>
             </div>
         </div>
 
-        <!-- 2번 아이템: 악보 번호 정렬 (신설: 기본 액티브 활성화) -->
+        <!-- 2번 아이템: 악보 번호 정렬 -->
         <div class="filter-flex-item">
             <div class="filter-title">🎵 악보 번호 정렬</div>
             <div class="btn-group">
@@ -577,7 +577,7 @@
         <thead>
             <tr>
                 <th class="col-no">NO</th>
-                <th class="col-check">완료</th>
+                <th class="col-check">보유</th> <!-- 💡 테이블 헤더 명칭 보유로 연동 변경 -->
                 <th id="th-path" class="col-path">분류</th>
                 <th class="col-new">악보 번호</th>
                 <th class="col-name">악보명</th>
