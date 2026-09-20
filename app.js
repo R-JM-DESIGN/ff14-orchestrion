@@ -1,6 +1,6 @@
 // app.js - Part 1
 // 🌟 [원상복구] 깃허브 캐시 대신 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
-const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxY7eALGsOKtXsh0vZ8EtcHigpCykqHDSw1CpfI3zA--8vq7IZbW4XmrN2wYi3AOXtS/exec';
+const GOOGLE_WEB_APP_URL = 'https://google.com';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
 // 🎯 [오류 영구 파쇄 완결] 로컬 스토리지 공통 이름표 상수를 최선단에 명확하게 신설 정의합니다.
@@ -15,7 +15,9 @@ let currentMain = '';
 let currentRewardFilters = [];   
 let currentStatusFilter = 'ALL'; 
 let currentSearchQuery = '';     
-let currentSortFilter = 'PATCH_ASC'; // 정렬 필터용 변수 상태 보존
+
+// 🌟 [기본 정렬 설정 갱신] 접속 시 최초 화면 정렬 디폴트값을 요청하신 'NUM_ASC'(번호순)로 지정합니다.
+let currentSortFilter = 'NUM_ASC'; 
 
 /**
  * ------------------------------------------------------------------------------
@@ -100,7 +102,7 @@ async function fetchData() {
                 condition: getVal(3),   // 3번 열: [패치]
                 score: getVal(4),       // 4번 열: [획득처]
                 rewardType: getVal(5),  // 5번 열: [획득 방법]
-                rewardContent: getVal(6) // 6번 열: [거래 여부] 치환 없이 그대로 수집 유지
+                rewardContent: getVal(6) // 6번 열: [거래 여부] 원본 데이터 수집
             };
         }).filter(item => item.name && item.main); 
 
@@ -112,7 +114,7 @@ async function fetchData() {
         console.error(error);
         document.getElementById('achievement-list').innerHTML = `
             <tr><td colspan="9" style="text-align: center; color: #ff4d4d; font-weight: bold; padding: 40px;">
-                구글 스프레드시트 데이터를 로드하지 못했습니다.<br>
+                데이터를 로드하지 못했습니다.<br>
                 <span style="color: #aaa; font-size: 0.9em; font-weight: normal;">이유: ${error.message}</span>
             </td></tr>`;
     }
@@ -149,13 +151,25 @@ function selectStatusFilter(status) {
     renderList();
 }
 
+/**
+ * 🌟 [정렬 버튼 전용 액티브 스위칭 엔진 보완]
+ * 악보 번호 정렬(NUM_ASC, NUM_DESC) 조건이 추가됨에 따라 보라색 하이라이트를 정밀 제어합니다.
+ */
 function changeSortingFilter(sortType) {
     currentSortFilter = sortType;
+    
+    // 모든 정렬 버튼에서 보라색 액티브 클래스를 일시 제거합니다.
     document.querySelectorAll('.sort-filter-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // 선택한 조건에 부합하는 단추만 정밀하게 보라색으로 켭니다.
+    if(sortType === 'NUM_ASC') document.getElementById('sort-num-asc').classList.add('active');
+    if(sortType === 'NUM_DESC') document.getElementById('sort-num-desc').classList.add('active');
     if(sortType === 'PATCH_ASC') document.getElementById('sort-patch-asc').classList.add('active');
     if(sortType === 'PATCH_DESC') document.getElementById('sort-patch-desc').classList.add('active');
     if(sortType === 'SCORE_ASC') document.getElementById('sort-score-asc').classList.add('active');
     if(sortType === 'SCORE_DESC') document.getElementById('sort-score-desc').classList.add('active');
+    
+    // 정렬이 변경되었으므로 화면의 악보 리스트를 다시 정렬하여 출력합니다.
     renderList();
 }
 
@@ -271,18 +285,22 @@ function updatePathDisplay() {
     }
 }
 
+/**
+ * [카테고리별 색상 매핑 라이브러리 함수]
+ * 획득 방법(type)에 따라 다크모드/라이트모드 환경에 최적화된 악보 종류별 전용 테마 색상을 반환합니다.
+ */
 function getRewardColor(type) {
     if (!type || type === '-') return '#666666'; 
     const isLight = document.body.classList.contains("light-mode");
     switch (type) {
-        case '탈것': return isLight ? '#b80061' : '#ff70a6';      
-        case '꼬마친구': return isLight ? '#0066cc' : '#4ea8de';    
-        case '칭호': return isLight ? '#b55d00' : '#ff9f1c';      
-        case '장비': return isLight ? '#7209b7' : '#b5179e';      
-        case '가구': return isLight ? '#2d6a4f' : '#70e000';      
-        case '초코보 갑주': return isLight ? '#995a00' : '#ffd166';  
-        case '오케스트리온': return isLight ? '#0077b6' : '#48cae4'; 
-        default: return isLight ? '#14746f' : '#5bc0be';         
+        case '탈것': return isLight ? '#b80061' : '#ff70a6';       // 핫핑크 
+        case '꼬마친구': return isLight ? '#0066cc' : '#4ea8de';     // 스카이블루
+        case '칭호': return isLight ? '#b55d00' : '#ff9f1c';       // 오렌지 골드
+        case '장비': return isLight ? '#7209b7' : '#b5179e';       // 퍼플
+        case '가구': return isLight ? '#2d6a4f' : '#70e000';       // 네온 그린
+        case '초코보 갑주': return isLight ? '#995a00' : '#ffd166';   // 카나리아 옐로우
+        case '오케스트리온': return isLight ? '#0077b6' : '#48cae4';  // 딥블루
+        default: return isLight ? '#14746f' : '#5bc0be';          // 에메랄드 시안 민트
     }
 }
 
@@ -317,9 +335,15 @@ function renderList() {
         filtered = filtered.filter(item => checkedItems[item.id]);  
     }
 
-    // 정렬 필터 처리
+    // 🌟 [악보 번호 정렬 알고리즘 통합 완료]
+    // 렌더링 직전 단계에서 사용자가 선택한 정렬(기본값: NUM_ASC)에 맞춰 다차원 연산을 수행합니다.
     filtered.sort((a, b) => {
-        if (currentSortFilter === 'PATCH_ASC' || currentSortFilter === 'PATCH_DESC') {
+        if (currentSortFilter === 'NUM_ASC' || currentSortFilter === 'NUM_DESC') {
+            // 악보 번호 텍스트(예: "No.005", "012")에서 숫자 알맹이만 정밀 발췌하여 대조합니다.
+            const numA = parseInt(a.newCol.replace(/[^0-9]/g, '')) || 0;
+            const numB = parseInt(b.newCol.replace(/[^0-9]/g, '')) || 0;
+            return currentSortFilter === 'NUM_ASC' ? numA - numB : numB - numA;
+        } else if (currentSortFilter === 'PATCH_ASC' || currentSortFilter === 'PATCH_DESC') {
             const patchA = parseFloat(a.condition) || 0;
             const patchB = parseFloat(b.condition) || 0;
             return currentSortFilter === 'PATCH_ASC' ? patchA - patchB : patchB - patchA;
@@ -350,14 +374,13 @@ function renderList() {
         const isChecked = checkedItems[item.id] ? 'checked' : '';
         if(isChecked) tr.classList.add('completed'); 
 
+        // [획득처 카테고리별 동적 컬러 테마 패치 이식]
         const textColor = getRewardColor(item.rewardType);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
-        // 🌟 [사진 합성 스크린샷 컬러 마크업 구현]
-        // 시트 원본의 O/X 글자 종류를 판별하여 눈이 편안한 초록/빨강 볼드 템플릿 태그로 변형하여 출력합니다.
+        // O/X 시인성 마크업 처리
         const originTrade = (item.rewardContent || '-').toUpperCase().replace(/\s/g, '');
         let tradeMarkup = `<span>${item.rewardContent || '-'}</span>`;
-        
         if (originTrade === 'O' || originTrade === 'ㅇ') {
             tradeMarkup = `<span style="color: #2ec4b6; font-weight: 800; font-size: 1.15em;">O</span>`;
         } else if (originTrade === 'X' || originTrade === 'ㄴ') {
@@ -371,9 +394,9 @@ function renderList() {
             <td class="col-new">${item.newCol}</td>
             <td class="col-name">${item.name}</td>
             <td class="col-cond">${item.condition}</td>
-            <td class="col-score" style="color: ${textColor}; font-weight:bold;">${item.score || '-'}</td>
+            <td class="col-score" style="color: ${textColor}; font-weight: 700;">${item.score || '-'}</td> 
             <td class="col-rw-type">${item.rewardType || '-'}</td>
-            <td class="col-rw-content">${tradeMarkup}</td> <!-- 💡 컬러링 마크업 바인딩 -->
+            <td class="col-rw-content">${tradeMarkup}</td>
         `;
         listBody.appendChild(tr);
     });
