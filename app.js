@@ -286,21 +286,32 @@ function updatePathDisplay() {
 }
 
 /**
- * [카테고리별 색상 매핑 라이브러리 함수]
- * 획득 방법(type)에 따라 다크모드/라이트모드 환경에 최적화된 악보 종류별 전용 테마 색상을 반환합니다.
+ * 🌟 [새로고침: 16대 획득처 전용 동적 색상 매핑 엔진]
+ * 사용자가 시트 E열(획득처)에 기입한 텍스트 문장을 감지하여 다크/라이트 모드 최적화 색상을 실시간 반환합니다.
  */
 function getRewardColor(type) {
     if (!type || type === '-') return '#666666'; 
     const isLight = document.body.classList.contains("light-mode");
+    
+    // 💡 [개편 핵심] 기존의 rewardType 대조 방식을 폐기하고, 입력받은 획득처(score) 문장을 직접 대조 분기합니다.
     switch (type) {
-        case '탈것': return isLight ? '#b80061' : '#ff70a6';       // 핫핑크 
-        case '꼬마친구': return isLight ? '#0066cc' : '#4ea8de';     // 스카이블루
-        case '칭호': return isLight ? '#b55d00' : '#ff9f1c';       // 오렌지 골드
-        case '장비': return isLight ? '#7209b7' : '#b5179e';       // 퍼플
-        case '가구': return isLight ? '#2d6a4f' : '#70e000';       // 네온 그린
-        case '초코보 갑주': return isLight ? '#995a00' : '#ffd166';   // 카나리아 옐로우
-        case '오케스트리온': return isLight ? '#0077b6' : '#48cae4';  // 딥블루
-        default: return isLight ? '#14746f' : '#5bc0be';          // 에메랄드 시안 민트
+        case '상점 구입': return isLight ? '#b26a00' : '#ffca28';      
+        case '보물 찾기': return isLight ? '#b24a00' : '#ff9f1c';      
+        case '제작': return isLight ? '#00838f' : '#00e5ff';          
+        case '골드 소서': return isLight ? '#c2185b' : '#ff4081';      
+        case '우호 부족': return isLight ? '#00796b' : '#69f0ae';      
+        case '석판 교환': return isLight ? '#0277bd' : '#40c4ff';      
+        case '마물 사냥': return isLight ? '#c62828' : '#ff5252';      
+        case '이슈가르드 부흥': return isLight ? '#455a64' : '#e0f7fa'; 
+        case '돌발 임무': return isLight ? '#bc5100' : '#ffd700';      
+        case '채제작': return isLight ? '#33691e' : '#b2ff59';         
+        case '총사령부': return isLight ? '#5d4037' : '#d7ccc8';      
+        case '딥던전': return isLight ? '#7209b7' : '#b5179e';         
+        case '파생 던전': return isLight ? '#5e50a1' : '#e0aaff';      
+        case '퀘스트': return isLight ? '#424242' : '#e0e0e0';         
+        case '우주 개척': return isLight ? '#4c058a' : '#7209b7';      
+        case '던전': return isLight ? '#0077b6' : '#48cae4';          
+        default: return isLight ? '#14746f' : '#5bc0be'; // 예외 방어용 민트 코드 보존
     }
 }
 
@@ -335,11 +346,9 @@ function renderList() {
         filtered = filtered.filter(item => checkedItems[item.id]);  
     }
 
-    // 🌟 [악보 번호 정렬 알고리즘 통합 완료]
-    // 렌더링 직전 단계에서 사용자가 선택한 정렬(기본값: NUM_ASC)에 맞춰 다차원 연산을 수행합니다.
+    // 악보 번호 기준 기본 정렬 결합
     filtered.sort((a, b) => {
         if (currentSortFilter === 'NUM_ASC' || currentSortFilter === 'NUM_DESC') {
-            // 악보 번호 텍스트(예: "No.005", "012")에서 숫자 알맹이만 정밀 발췌하여 대조합니다.
             const numA = parseInt(a.newCol.replace(/[^0-9]/g, '')) || 0;
             const numB = parseInt(b.newCol.replace(/[^0-9]/g, '')) || 0;
             return currentSortFilter === 'NUM_ASC' ? numA - numB : numB - numA;
@@ -356,7 +365,6 @@ function renderList() {
         }
         return 0;
     });
-
     const showPathColumn = (currentRewardFilters.length > 0 || currentSearchQuery !== '');
     if (showPathColumn) thPath.style.display = ''; 
     else thPath.style.display = 'none'; 
@@ -374,8 +382,9 @@ function renderList() {
         const isChecked = checkedItems[item.id] ? 'checked' : '';
         if(isChecked) tr.classList.add('completed'); 
 
-        // [획득처 카테고리별 동적 컬러 테마 패치 이식]
-        const textColor = getRewardColor(item.rewardType);
+        // 🌟 [지정 색상 파이프라인 변환 기입]
+        // item.score(획득처 이름 자체)를 라이브러리에 밀어 넣어 고유 카테고리 색상을 취득합니다.
+        const textColor = getRewardColor(item.score);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
         // O/X 시인성 마크업 처리
