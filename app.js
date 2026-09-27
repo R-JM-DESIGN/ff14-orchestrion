@@ -402,7 +402,7 @@ function renderList() {
             tradeMarkup = `<span style="color: #cc444b; font-weight: 800; font-size: 1.15em;">X</span>`;
         }
 
-        // 🌟 [대괄호 최우선 / 소괄호 개수 조건부 하이브리드 줄바꿈 엔진]
+        // 🌟 [대괄호 최우선 / 소괄호 조건부 하이브리드 줄바꿈 엔진 + '단계' 예외 필터]
         const rawRewardType = item.rewardType || '-';
         let customRewardMarkup = rawRewardType;
         let targetIdx = -1;
@@ -411,19 +411,26 @@ function renderList() {
             // 규칙 1: 문장에 대괄호가 있으면 위치 불문하고 대괄호 시작점에서 무조건 줄바꿈
             targetIdx = rawRewardType.indexOf('[');
         } else if (rawRewardType.includes('(')) {
-            // 규칙 2: 대괄호가 없고 소괄호만 있을 때 개수 추적
+            // 규칙 2: 대괄호가 없고 소괄호만 있을 때 개수 및 내부 텍스트 추적
             let smallParenPositions = [];
             for (let i = 0; i < rawRewardType.length; i++) {
                 if (rawRewardType[i] === '(') {
-                    smallParenPositions.push(i);
+                    // 💡 현재 괄호 시작점부터 닫히는 괄호 ')'까지의 내부 텍스트 슬라이싱 추출
+                    const endIdx = rawRewardType.indexOf(')', i);
+                    const insideText = endIdx !== -1 ? rawRewardType.substring(i, endIdx + 1) : '';
+                    
+                    // 💡 괄호 내부에 "단계"라는 단어가 포함되어 있다면 이 괄호는 줄바꿈 타겟 후보에서 완전히 제외합니다.
+                    if (!insideText.includes('단계')) {
+                        smallParenPositions.push(i);
+                    }
                 }
             }
 
             if (smallParenPositions.length >= 2) {
-                // 규칙 2-A: 소괄호가 2개 이상이면 무조건 두 번째 소괄호 위치 지정
+                // 규칙 2-A: "단계"를 제외한 유효한 소괄호가 2개 이상이면 두 번째 소괄호 위치 지정
                 targetIdx = smallParenPositions[1];
             } else if (smallParenPositions.length === 1) {
-                // 규칙 2-B: 소괄호가 딱 1개라면 NPC 포함 혹은 (Lv. 로 시작할 때만 지정
+                // 규칙 2-B: "단계"를 제외한 유효한 소괄호가 딱 1개라면 NPC 포함 혹은 (Lv. 로 시작할 때 지정
                 const firstIdx = smallParenPositions[0];
                 const afterText = rawRewardType.substring(firstIdx);
                 if (afterText.startsWith('(Lv.') || afterText.includes('NPC')) {
