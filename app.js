@@ -360,7 +360,6 @@ function renderList() {
             const numB = parseInt(b.newCol.replace(/[^0-9]/g, '')) || 0;
             return currentSortFilter === 'NUM_ASC' ? numA - numB : numB - numA;
         } else if (currentSortFilter === 'PATCH_ASC' || currentSortFilter === 'PATCH_DESC') {
-            // 💡 정렬할 때만 임시로 실수형 숫자로 파싱하여 위아래 정렬을 정상 작동시킵니다.
             const patchA = parseFloat(a.condition) || 0;
             const patchB = parseFloat(b.condition) || 0;
             return currentSortFilter === 'PATCH_ASC' ? patchA - patchB : patchB - patchA;
@@ -403,37 +402,43 @@ function renderList() {
             tradeMarkup = `<span style="color: #cc444b; font-weight: 800; font-size: 1.15em;">X</span>`;
         }
 
-        // [괄호 내부 텍스트 조건 탐지 기반 줄바꿈 엔진]
+        // 🌟 [대괄호 최우선 / 소괄호 개수 조건부 하이브리드 줄바꿈 엔진]
         const rawRewardType = item.rewardType || '-';
         let customRewardMarkup = rawRewardType;
+        let targetIdx = -1;
 
         if (rawRewardType.includes('[')) {
-            const splitIdx = rawRewardType.indexOf('[');
-            const mainText = rawRewardType.substring(0, splitIdx).trim();
-            const subText = rawRewardType.substring(splitIdx).trim();
-            customRewardMarkup = `${mainText}<br><small style="font-size: 0.85em; opacity: 0.65; display: inline-block; margin-top: 3px;">${subText}</small>`;
+            // 규칙 1: 문장에 대괄호가 있으면 위치 불문하고 대괄호 시작점에서 무조건 줄바꿈
+            targetIdx = rawRewardType.indexOf('[');
         } else if (rawRewardType.includes('(')) {
-            let targetIdx = -1;
-            const matches = [...rawRewardType.matchAll(/\(/g)];
-            
-            for (const match of matches) {
-                const parenStartIdx = match.index;
-                const afterParenText = rawRewardType.substring(parenStartIdx);
-
-                if (afterParenText.startsWith('(Lv.') || afterParenText.includes('NPC')) {
-                    targetIdx = parenStartIdx;
-                    break; 
+            // 규칙 2: 대괄호가 없고 소괄호만 있을 때 개수 추적
+            let smallParenPositions = [];
+            for (let i = 0; i < rawRewardType.length; i++) {
+                if (rawRewardType[i] === '(') {
+                    smallParenPositions.push(i);
                 }
             }
 
-            if (targetIdx !== -1) {
-                const mainText = rawRewardType.substring(0, targetIdx).trim();
-                const subText = rawRewardType.substring(targetIdx).trim();
-                customRewardMarkup = `${mainText}<br><small style="font-size: 0.85em; opacity: 0.65; display: inline-block; margin-top: 3px;">${subText}</small>`;
+            if (smallParenPositions.length >= 2) {
+                // 규칙 2-A: 소괄호가 2개 이상이면 무조건 두 번째 소괄호 위치 지정
+                targetIdx = smallParenPositions[1];
+            } else if (smallParenPositions.length === 1) {
+                // 규칙 2-B: 소괄호가 딱 1개라면 NPC 포함 혹은 (Lv. 로 시작할 때만 지정
+                const firstIdx = smallParenPositions[0];
+                const afterText = rawRewardType.substring(firstIdx);
+                if (afterText.startsWith('(Lv.') || afterText.includes('NPC')) {
+                    targetIdx = firstIdx;
+                }
             }
         }
 
-        // 💡 중요: item.condition을 변경하지 않고 문자열 그대로 테이블에 밀어 넣습니다.
+        // 타겟 컷팅 지점이 정해졌다면 HTML 분리 가공 진행
+        if (targetIdx !== -1) {
+            const mainText = rawRewardType.substring(0, targetIdx).trim();
+            const subText = rawRewardType.substring(targetIdx).trim();
+            customRewardMarkup = `${mainText}<br><small style="font-size: 0.85em; opacity: 0.65; display: inline-block; margin-top: 3px;">${subText}</small>`;
+        }
+
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
