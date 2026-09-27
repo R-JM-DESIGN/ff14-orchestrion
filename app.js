@@ -90,17 +90,17 @@ async function fetchData() {
                 return row[colIdx] !== undefined && row[colIdx] !== null ? String(row[colIdx]).trim() : '';
             };
 
-            const musicName = getVal(2); // 2번 열: [악보명] 추출
+            const musicName = getVal(2); 
 
             return {
                 id: musicName,          
-                main: getVal(0),        // 0번 열: [분류]
-                name: musicName,        // 2번 열: [악보명]
-                newCol: getVal(1),      // 1번 열: [악보 번호]
-                condition: getVal(3),   // 3번 열: [패치]
-                score: getVal(4),       // 4번 열: [획득처]
-                rewardType: getVal(5),  // 5번 열: [획득 방법]
-                rewardContent: getVal(6) // 6번 열: [거래 여부]
+                main: getVal(0),        
+                name: musicName,        
+                newCol: getVal(1),      
+                condition: getVal(3),   
+                score: getVal(4),       
+                rewardType: getVal(5),  
+                rewardContent: getVal(6) 
             };
         }).filter(item => item.name && item.main); 
 
@@ -395,31 +395,36 @@ function renderList() {
             tradeMarkup = `<span style="color: #cc444b; font-weight: 800; font-size: 1.15em;">X</span>`;
         }
 
-        // 🌟 [우선순위 기반 교차 괄호 분리 파싱 엔진]
+        // 🌟 [괄호 내부 텍스트 조건 탐지 기반 줄바꿈 엔진]
         const rawRewardType = item.rewardType || '-';
         let customRewardMarkup = rawRewardType;
 
         if (rawRewardType.includes('[')) {
-            // 1) 대괄호가 있으면 대괄호 앞 컷팅 후 작고 연하게 마크업
+            // 1단계: 대괄호([)가 있는 경우 무조건 최우선 줄바꿈
             const splitIdx = rawRewardType.indexOf('[');
             const mainText = rawRewardType.substring(0, splitIdx).trim();
             const subText = rawRewardType.substring(splitIdx).trim();
             customRewardMarkup = `${mainText}<br><small style="font-size: 0.85em; opacity: 0.65; display: inline-block; margin-top: 3px;">${subText}</small>`;
         } else if (rawRewardType.includes('(')) {
-            // 2) 대괄호가 없고 소괄호만 있을 때의 처리
-            const matches = [...rawRewardType.matchAll(/\(/g)];
+            // 2단계: 대괄호가 없고 소괄호만 있을 때 조건부 검사
             let targetIdx = -1;
 
-            if (matches.length >= 2) {
-                // 괄호가 2개 이상이면 첫 번째가 (Lv.)이든 아니든 무조건 '뒤의 괄호' 기준으로 자릅니다.
-                targetIdx = matches[1].index;
-            } else if (matches.length === 1) {
-                // 괄호가 딱 1개 있을 때는 (Lv.로 시작하지 않을 때만 자릅니다.
-                if (!rawRewardType.includes('(Lv.')) {
-                    targetIdx = matches[0].index;
+            // 문장 전체에서 모든 '(' 위치를 추적합니다
+            const matches = [...rawRewardType.matchAll(/\(/g)];
+            
+            for (const match of matches) {
+                const parenStartIdx = match.index;
+                const afterParenText = rawRewardType.substring(parenStartIdx);
+
+                // 조건 A: 괄호가 열리자마자 'Lv.'이 오거나
+                // 조건 B: 괄호가 열린 이후 문자열에 'NPC'라는 단어가 포함되어 있다면 타겟으로 지정
+                if (afterParenText.startsWith('(Lv.') || afterParenText.includes('NPC')) {
+                    targetIdx = parenStartIdx;
+                    break; // 조건을 만족하는 첫 괄호를 찾으면 탐색을 종료합니다
                 }
             }
 
+            // 매칭되는 괄호 지점이 발견되었다면 줄바꿈 처리 집도
             if (targetIdx !== -1) {
                 const mainText = rawRewardType.substring(0, targetIdx).trim();
                 const subText = rawRewardType.substring(targetIdx).trim();
