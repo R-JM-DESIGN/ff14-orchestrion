@@ -1,5 +1,5 @@
 // app.js - Part 1
-// 🌟 [원상복구] 깃허브 캐시 대신 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
+// 🌟 [원상복구] 사용자님의 구글 웹앱 주소로 직접 데이터를 실시간 요청합니다.
 const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxY7eALGsOKtXsh0vZ8EtcHigpCykqHDSw1CpfI3zA--8vq7IZbW4XmrN2wYi3AOXtS/exec';
 const SHEET_URL = GOOGLE_WEB_APP_URL; 
 
@@ -201,7 +201,6 @@ function selectMainCategory(main, btn) {
     updatePathDisplay(); 
     renderList();        
 }
-
 /**
  * ------------------------------------------------------------------------------
  * 4. [획득처별 모아보기] 필터 메뉴 생성기 (initRewardMenu)
@@ -281,7 +280,6 @@ function updatePathDisplay() {
     if (currentSearchQuery) {
         display.textContent = `🔍 전체 항목 중에서 '${currentSearchQuery}' 검색 결과`;
     } else if (currentMain && currentRewardFilters.length > 0) {
-        // 대분류와 획득처 필터가 동시 활성화 시 상단 경로 단추 결합 표출
         display.textContent = `📁 ${currentMain} ➔ 🎁 [다중 필터] 획득처 : ${currentRewardFilters.join(', ')}`;
     } else if (currentRewardFilters.length > 0) {
         display.textContent = `🎁 [다중 필터] 획득처 : ${currentRewardFilters.join(', ')}`;
@@ -292,7 +290,6 @@ function updatePathDisplay() {
 
 /**
  * [16대 획득처 전용 동적 색상 매핑 엔진]
- * 사용자가 시트 E열(획득처)에 기입한 텍스트 문장을 감지하여 다크/라이트 모드 최적화 색상을 실시간 반환합니다.
  */
 function getRewardColor(type) {
     if (!type || type === '-') return '#666666'; 
@@ -318,7 +315,6 @@ function getRewardColor(type) {
         default: return isLight ? '#14746f' : '#5bc0be'; 
     }
 }
-
 function renderList() {
     const listBody = document.getElementById('achievement-list');
     const thPath = document.getElementById('th-path');
@@ -327,17 +323,13 @@ function renderList() {
 
     let filtered = [];
     
-    // 🌟 [다중 교집합 필터 연산 아키텍처 공식 탑재]
+    // [다중 교집합 필터 연산 아키텍처]
     if (!currentSearchQuery) {
-        // 1단계: 선택한 대분류 카테고리(`currentMain`) 필터링을 기본 풀로 삼습니다.
         filtered = rawData.filter(item => item.main === currentMain);
-        
-        // 2단계: 획득처별 모아보기가 켜져있다면 대분류 풀 안에서 한 번 더 축소 교집합을 걸러냅니다.
         if (currentRewardFilters.length > 0) {
             filtered = filtered.filter(item => currentRewardFilters.includes(item.score));
         }
     } else {
-        // 검색 쿼리가 가동 중일 때의 검색 우선 정렬
         filtered = rawData.filter(item => {
             const nameMatch = item.name.toLowerCase().includes(currentSearchQuery);
             const newColMatch = item.newCol.toLowerCase().includes(currentSearchQuery);
@@ -373,7 +365,7 @@ function renderList() {
         }
         return 0;
     });
-    // 다중 필터 작동 조건 시 분류 열 확장 스위칭 로직 고정
+
     const showPathColumn = (currentSearchQuery !== '' || (currentRewardFilters.length > 0 && !currentMain));
     if (showPathColumn) thPath.style.display = ''; 
     else thPath.style.display = 'none'; 
@@ -394,13 +386,45 @@ function renderList() {
         const textColor = getRewardColor(item.score);
         let pathTd = showPathColumn ? `<td class="col-path">${item.main}</td>` : '';
 
-        // O/X 시인성 마크업 처리
+        // O/X 거래 여부 시인성 마크업 처리
         const originTrade = (item.rewardContent || '-').toUpperCase().replace(/\s/g, '');
         let tradeMarkup = `<span>${item.rewardContent || '-'}</span>`;
         if (originTrade === 'O' || originTrade === 'ㅇ') {
             tradeMarkup = `<span style="color: #2ec4b6; font-weight: 800; font-size: 1.15em;">O</span>`;
         } else if (originTrade === 'X' || originTrade === 'ㄴ') {
             tradeMarkup = `<span style="color: #cc444b; font-weight: 800; font-size: 1.15em;">X</span>`;
+        }
+
+        // 🌟 [우선순위 기반 교차 괄호 분리 파싱 엔진]
+        const rawRewardType = item.rewardType || '-';
+        let customRewardMarkup = rawRewardType;
+
+        if (rawRewardType.includes('[')) {
+            // 1) 대괄호가 있으면 대괄호 앞 컷팅 후 작고 연하게 마크업
+            const splitIdx = rawRewardType.indexOf('[');
+            const mainText = rawRewardType.substring(0, splitIdx).trim();
+            const subText = rawRewardType.substring(splitIdx).trim();
+            customRewardMarkup = `${mainText}<br><small style="font-size: 0.85em; opacity: 0.65; display: inline-block; margin-top: 3px;">${subText}</small>`;
+        } else if (rawRewardType.includes('(')) {
+            // 2) 대괄호가 없고 소괄호만 있을 때의 처리
+            const matches = [...rawRewardType.matchAll(/\(/g)];
+            let targetIdx = -1;
+
+            if (matches.length >= 2) {
+                // 괄호가 2개 이상이면 첫 번째가 (Lv.)이든 아니든 무조건 '뒤의 괄호' 기준으로 자릅니다.
+                targetIdx = matches[1].index;
+            } else if (matches.length === 1) {
+                // 괄호가 딱 1개 있을 때는 (Lv.로 시작하지 않을 때만 자릅니다.
+                if (!rawRewardType.includes('(Lv.')) {
+                    targetIdx = matches[0].index;
+                }
+            }
+
+            if (targetIdx !== -1) {
+                const mainText = rawRewardType.substring(0, targetIdx).trim();
+                const subText = rawRewardType.substring(targetIdx).trim();
+                customRewardMarkup = `${mainText}<br><small style="font-size: 0.85em; opacity: 0.65; display: inline-block; margin-top: 3px;">${subText}</small>`;
+            }
         }
 
         tr.innerHTML = `
@@ -411,13 +435,12 @@ function renderList() {
             <td class="col-name">${item.name}</td>
             <td class="col-cond">${item.condition}</td>
             <td class="col-score" style="color: ${textColor}; font-weight: 700;">${item.score || '-'}</td> 
-            <td class="col-rw-type">${item.rewardType || '-'}</td>
+            <td class="col-rw-type">${customRewardMarkup}</td>
             <td class="col-rw-content">${tradeMarkup}</td>
         `;
         listBody.appendChild(tr);
     });
 
-    // 하단 챕터별 게이지 연산 시 현재 다중 교차 필터링된 개수를 온전히 넘겨 실시간 동기화합니다.
     calculateChapterProgress(filtered);
 }
 
@@ -476,11 +499,6 @@ function calculateChapterProgress(currentItems) {
     document.getElementById('chapter-bar').style.width = `${percent}%`;
 }
 
-/**
- * ==============================================================================
- * 🚀 [무결성 순차 제어 아키텍처 및 자동 클릭 물리 트리거 엔진]
- * ==============================================================================
- */
 document.addEventListener('DOMContentLoaded', () => {
     fetchData().then(() => {
         updatePathDisplay(); 
