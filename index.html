@@ -160,7 +160,6 @@
             line-height: 1.6;
             transition: all 0.3s;
         }
-
         .progress-container {
             display: flex;
             gap: 20px;
@@ -214,22 +213,19 @@
         }
         
         /* 🌟 [정렬 레이아웃 비율 전면 개편] */
-        /* 필터들이 한 줄을 꽉 채우며 공백 없이 밀착 배치되도록 비율 연산 체계를 리팩토링했습니다. */
         .filter-flex-row {
             display: flex;
-            flex-wrap: nowrap; /* 💡 화면이 작아지기 전까지는 강제로 아래로 떨어지지 않도록 설정 */
-            gap: 15px;         /* 상자 사이의 여백을 20px에서 15px로 더 컴팩트하게 밀착 */
+            flex-wrap: nowrap; 
+            gap: 15px;         
             width: 100%;
         }
         
         /* 🌟 [완료 여부 필터 칸 전폭 확장] */
-        /* 세 단추가 아래로 깨져서 두 줄이 되지 않도록 가로 지분 비율(flex-grow)을 다른 상자들보다 2배 이상 넓게 배정합니다. */
         .filter-flex-row .filter-flex-item:nth-child(1) {
             flex: 2.2;         
-            min-width: 430px;  /* 세 버튼이 수평으로 완벽히 펼쳐져 한 줄로 고정될 수 있는 최소 안전 너비 확보 */
+            min-width: 430px;  
         }
         
-        /* 나머지 세 종류의 정렬 단추 상자들은 오른쪽 남는 공간을 고르게 분할 흡수하며 꽉 채우도록 설정합니다. */
         .filter-flex-row .filter-flex-item:nth-child(2),
         .filter-flex-row .filter-flex-item:nth-child(3),
         .filter-flex-row .filter-flex-item:nth-child(4) {
@@ -421,36 +417,41 @@
         }
         tr.completed td.col-cond { color: var(--completed-cond-color); }
 
-        /* [획득처 항목 헤비 볼드체 변환 유지] */
+        /* [획득처 항목 헤비 볼드체 및 좌측 정렬 변환] */
         td.col-score {
             font-size: 1.02em !important;   
             font-weight: 700 !important;   
             letter-spacing: -0.01em;
             line-height: 1.55;
-            text-align: center;
+            text-align: left !important;
+            padding-left: 15px !important;
         }
 
-        /* [획득 방법 항목 크기 정밀 미세 축소 유지] */
+        /* [획득 방법 항목 크기 정밀 미세 축소 및 폭 확장] */
         td.col-rw-type {
             font-size: 0.93em !important;   
             font-weight: 500 !important;   
             letter-spacing: -0.01em;
             line-height: 1.55;
             text-align: left; 
-            padding-left: 20px !important;
+            padding-left: 15px !important;
         }
         
-        /* 테이블 열 정밀 고정 및 비율 분배 */
+        /* 🌟 테이블 열 정밀 고정 및 비율 분배 수정 완료 */
         .col-new { width: 100px; }       
-        .col-cond { width: 90px; }       
-        .col-score { width: 230px; }      
-        .col-rw-type { width: 340px; }    
+        .col-cond { width: 65px; }       /* 💡 기존 90px -> 65px로 축소 */
+        .col-score { width: 155px; }     /* 💡 기존 230px -> 155px로 축소 */
+        .col-rw-type { width: 440px; }   /* 💡 기존 340px -> 440px로 대폭 확장 */
         .col-rw-content { width: 110px; } 
 
-        th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-score, th.col-rw-type, th.col-rw-content {
+        /* 💡 획득처 헤더 본문 정렬 싱크 보정 */
+        th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-rw-type, th.col-rw-content {
             text-align: center;
         }
-
+        th.col-score {
+            text-align: left;
+            padding-left: 15px !important;
+        }
         input[type="checkbox"] {
             width: 18px;
             height: 18px;
@@ -526,7 +527,7 @@
 
     <!-- [정렬 그룹 수평 배치 컨테이너] 4가지 컴포넌트가 공백 없이 수평 배치됩니다 -->
     <div class="filter-flex-row">
-        <!-- 1번 아이템: 🌟 완료 여부에서 '보유 여부' 텍스트로 명칭 전면 치환 완료 -->
+        <!-- 1번 아이템: 보유 여부 -->
         <div class="filter-flex-item">
             <div class="filter-title">✔️ 보유 여부 필터</div>
             <div class="btn-group">
@@ -577,7 +578,7 @@
         <thead>
             <tr>
                 <th class="col-no">NO</th>
-                <th class="col-check">보유</th> <!-- 💡 테이블 헤더 명칭 보유로 연동 변경 -->
+                <th class="col-check">보유</th> 
                 <th id="th-path" class="col-path">분류</th>
                 <th class="col-new">악보 번호</th>
                 <th class="col-name">악보명</th>
