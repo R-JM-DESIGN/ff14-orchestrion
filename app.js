@@ -353,6 +353,7 @@ function renderList() {
             const numB = parseInt(b.newCol.replace(/[^0-9]/g, '')) || 0;
             return currentSortFilter === 'NUM_ASC' ? numA - numB : numB - numA;
         } else if (currentSortFilter === 'PATCH_ASC' || currentSortFilter === 'PATCH_DESC') {
+            // 💡 정렬할 때만 임시로 실수형 숫자로 파싱하여 위아래 정렬을 정상 작동시킵니다.
             const patchA = parseFloat(a.condition) || 0;
             const patchB = parseFloat(b.condition) || 0;
             return currentSortFilter === 'PATCH_ASC' ? patchA - patchB : patchB - patchA;
@@ -395,36 +396,29 @@ function renderList() {
             tradeMarkup = `<span style="color: #cc444b; font-weight: 800; font-size: 1.15em;">X</span>`;
         }
 
-        // 🌟 [괄호 내부 텍스트 조건 탐지 기반 줄바꿈 엔진]
+        // [괄호 내부 텍스트 조건 탐지 기반 줄바꿈 엔진]
         const rawRewardType = item.rewardType || '-';
         let customRewardMarkup = rawRewardType;
 
         if (rawRewardType.includes('[')) {
-            // 1단계: 대괄호([)가 있는 경우 무조건 최우선 줄바꿈
             const splitIdx = rawRewardType.indexOf('[');
             const mainText = rawRewardType.substring(0, splitIdx).trim();
             const subText = rawRewardType.substring(splitIdx).trim();
             customRewardMarkup = `${mainText}<br><small style="font-size: 0.85em; opacity: 0.65; display: inline-block; margin-top: 3px;">${subText}</small>`;
         } else if (rawRewardType.includes('(')) {
-            // 2단계: 대괄호가 없고 소괄호만 있을 때 조건부 검사
             let targetIdx = -1;
-
-            // 문장 전체에서 모든 '(' 위치를 추적합니다
             const matches = [...rawRewardType.matchAll(/\(/g)];
             
             for (const match of matches) {
                 const parenStartIdx = match.index;
                 const afterParenText = rawRewardType.substring(parenStartIdx);
 
-                // 조건 A: 괄호가 열리자마자 'Lv.'이 오거나
-                // 조건 B: 괄호가 열린 이후 문자열에 'NPC'라는 단어가 포함되어 있다면 타겟으로 지정
                 if (afterParenText.startsWith('(Lv.') || afterParenText.includes('NPC')) {
                     targetIdx = parenStartIdx;
-                    break; // 조건을 만족하는 첫 괄호를 찾으면 탐색을 종료합니다
+                    break; 
                 }
             }
 
-            // 매칭되는 괄호 지점이 발견되었다면 줄바꿈 처리 집도
             if (targetIdx !== -1) {
                 const mainText = rawRewardType.substring(0, targetIdx).trim();
                 const subText = rawRewardType.substring(targetIdx).trim();
@@ -432,13 +426,14 @@ function renderList() {
             }
         }
 
+        // 💡 중요: item.condition을 변경하지 않고 문자열 그대로 테이블에 밀어 넣습니다.
         tr.innerHTML = `
             <td class="col-no">${idx + 1}</td> 
             <td class="col-check"><input type="checkbox" ${isChecked} onchange="toggleItem('${item.id}', this)"></td>
             ${pathTd}
             <td class="col-new">${item.newCol}</td>
             <td class="col-name">${item.name}</td>
-            <td class="col-cond">${item.condition}</td>
+            <td class="col-cond">${item.condition || '-'}</td>
             <td class="col-score" style="color: ${textColor}; font-weight: 700;">${item.score || '-'}</td> 
             <td class="col-rw-type">${customRewardMarkup}</td>
             <td class="col-rw-content">${tradeMarkup}</td>
