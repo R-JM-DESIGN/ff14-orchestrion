@@ -417,15 +417,14 @@
         }
         tr.completed td.col-cond { color: var(--completed-cond-color); }
 
-        /* [획득처 항목 헤비 볼드체 및 좌측 정렬 변환] */
-        /* [획득처 항목 헤비 볼드체 및 중앙 정렬 변환 완료] */
+        /* [획득처 항목 헤비 볼드체 및 중앙 정렬 변환] */
         td.col-score {
             font-size: 1.02em !important;   
             font-weight: 700 !important;   
             letter-spacing: -0.01em;
             line-height: 1.55;
-            text-align: center !important;    /* 💡 좌측 정렬에서 다시 중앙 정렬로 변경 */
-            padding-left: 0 !important;       /* 💡 불필요해진 왼쪽 여백 제거 */
+            text-align: center !important;    /* 💡 본문 열 중앙 정렬 */
+            padding-left: 0 !important;       
         }
 
         /* [획득 방법 항목 크기 정밀 미세 축소 및 폭 확장] */
@@ -445,10 +444,11 @@
         .col-rw-type { width: 440px; }   
         .col-rw-content { width: 110px; } 
 
-        /* 💡 머리글(th)도 다른 열들과 마찬가지로 모두 중앙 정렬로 통일 */
+        /* 💡 머리글(th) 및 모든 정렬 대상 열을 단 하나의 예외 없이 중앙 정렬로 강제 통일 */
         th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-score, th.col-rw-type, th.col-rw-content {
-            text-align: center;
+            text-align: center !important;
         }
+
         th.col-score {
             text-align: left;
             padding-left: 15px !important;
