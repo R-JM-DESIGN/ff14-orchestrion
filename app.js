@@ -91,16 +91,23 @@ async function fetchData() {
             };
 
             const musicName = getVal(2); 
+            
+            // 💡 [패치 버전 텍스트 유실 방지 수술]
+            // 데이터가 '4'처럼 소수점이 증발한 순수 정수 숫자로 넘어오면 강제로 뒤에 '.0'을 붙여 보정합니다.
+            let patchCondition = getVal(3); // 3번 열: [패치]
+            if (patchCondition && !isNaN(patchCondition) && !patchCondition.includes('.')) {
+                patchCondition = parseFloat(patchCondition).toFixed(1);
+            }
 
             return {
                 id: musicName,          
-                main: getVal(0),        
-                name: musicName,        
-                newCol: getVal(1),      
-                condition: getVal(3),   
-                score: getVal(4),       
-                rewardType: getVal(5),  
-                rewardContent: getVal(6) 
+                main: getVal(0),        // 0번 열: [분류]
+                name: musicName,        // 2번 열: [악보명]
+                newCol: getVal(1),      // 1번 열: [악보 번호]
+                condition: patchCondition, // 💡 보정된 패치 문자열 적용
+                score: getVal(4),       // 4번 열: [획득처]
+                rewardType: getVal(5),  // 5번 열: [획득 방법]
+                rewardContent: getVal(6) // 6번 열: [거래 여부]
             };
         }).filter(item => item.name && item.main); 
 
