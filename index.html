@@ -417,24 +417,34 @@
         }
         tr.completed td.col-cond { color: var(--completed-cond-color); }
 
-        /* [획득처 항목 헤비 볼드체 및 중앙 정렬 변환] */
-        td.col-score {
+        /* 🎯 [획득처 항목 정렬 오류 영구 파쇄 완결] */
+        /* 패딩 값을 th와 무조건 일치시켜 어떠한 환경에서도 완벽한 수직 중앙선 정렬을 강제합니다 */
+        th.col-score, td.col-score {
             font-size: 1.02em !important;   
             font-weight: 700 !important;   
             letter-spacing: -0.01em;
             line-height: 1.55;
-            text-align: center !important;    /* 💡 본문 열 중앙 정렬 */
-            padding-left: 0 !important;       
+            text-align: center !important;    /* 💡 완벽한 중앙 정렬 */
+            padding: 14px 15px !important;    /* 💡 머리글 th와 완전 동일한 패딩 부여로 정렬 축 동기화 */
+        }
+        th.col-score {
+            font-size: 1em !important;        /* 💡 머리글 폰트 크기는 기본 유지 */
+            font-weight: 600 !important;
         }
 
         /* [획득 방법 항목 크기 정밀 미세 축소 및 폭 확장] */
-        td.col-rw-type {
+        th.col-rw-type, td.col-rw-type {
             font-size: 0.93em !important;   
             font-weight: 500 !important;   
             letter-spacing: -0.01em;
             line-height: 1.55;
-            text-align: left; 
-            padding-left: 15px !important;
+            text-align: left !important;      /* 💡 헤더와 본문 모두 좌측 정렬 통일로 뒤틀림 방지 */
+            padding-left: 20px !important;    /* 💡 가독성을 위한 왼쪽 여백 통일 */
+        }
+        th.col-rw-type {
+            font-size: 1em !important;
+            font-weight: 600 !important;
+            text-align: center !important;    /* 💡 머리글 텍스트 자체는 중앙으로 배치 */
         }
         
         /* 테이블 열 정밀 고정 및 비율 분배 */
@@ -444,8 +454,9 @@
         .col-rw-type { width: 440px; }   
         .col-rw-content { width: 110px; } 
 
-        /* 💡 머리글(th) 및 모든 정렬 대상 열을 단 하나의 예외 없이 중앙 정렬로 강제 통일 */
-        th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-score, th.col-rw-type, th.col-rw-content {
+        /* 💡 기본 전체 중앙 정렬 베이스 구조 유지 */
+        th.col-no, th.col-check, th.col-path, th.col-name, th.col-cond, th.col-new, th.col-rw-content,
+        td.col-no, td.col-check, td.col-path, td.col-name, td.col-cond, td.col-new, td.col-rw-content {
             text-align: center !important;
         }
 
